@@ -91,6 +91,7 @@ Route::middleware(['auth', 'verified', 'auto.logout'])->group(function () {
             Route::post('/', [ProjectController::class, 'store'])->name('store');
             Route::get('/{project}/edit', [ProjectController::class, 'edit'])->name('edit');
             Route::put('/{project}', [ProjectController::class, 'update'])->name('update');
+            Route::delete('/{project}', [ProjectController::class, 'destroy'])->name('destroy');
         });
 
         // Admin & Marketing: manage timeline
@@ -168,21 +169,11 @@ Route::middleware(['auth', 'verified', 'auto.logout'])->group(function () {
 
         // View for all authenticated roles
         Route::get('/', [SupplierController::class, 'index'])->name('index');
-        Route::get('/{supplier}', [SupplierController::class, 'show'])->name('show');
 
         // Master Supplier (CRUD: Admin & SCM)
         Route::middleware('role:admin,scm')->group(function () {
             Route::get('/create/new', [SupplierController::class, 'create'])->name('create');
             Route::post('/', [SupplierController::class, 'store'])->name('store');
-            Route::get('/{supplier}/edit', [SupplierController::class, 'edit'])->name('edit');
-            Route::put('/{supplier}', [SupplierController::class, 'update'])->name('update');
-            Route::delete('/{supplier}', [SupplierController::class, 'destroy'])->name('destroy');
-        });
-
-        // Pitching & Trial (Admin, R&D, Supplier)
-        Route::middleware('role:admin,rd,supplier')->group(function () {
-            Route::post('/trials', [SupplierController::class, 'storeTrial'])->name('trials.store');
-            Route::post('/trials/{supplierTrial}/review', [SupplierController::class, 'reviewTrial'])->name('trials.review');
         });
 
         // Quotation Management (Admin, SCM, Supplier)
@@ -196,6 +187,21 @@ Route::middleware(['auth', 'verified', 'auto.logout'])->group(function () {
         Route::middleware('role:admin,scm')->group(function () {
             Route::post('/{supplier}/evaluate', [SupplierController::class, 'evaluate'])->name('evaluate');
         });
+
+        // Pitching & Trial (Admin, R&D, Supplier)
+        Route::middleware('role:admin,rd,supplier')->group(function () {
+            Route::post('/trials', [SupplierController::class, 'storeTrial'])->name('trials.store');
+            Route::post('/trials/{supplierTrial}/review', [SupplierController::class, 'reviewTrial'])->name('trials.review');
+        });
+
+        Route::middleware('role:admin,scm')->group(function () {
+            Route::get('/{supplier}/edit', [SupplierController::class, 'edit'])->name('edit');
+            Route::put('/{supplier}', [SupplierController::class, 'update'])->name('update');
+            Route::delete('/{supplier}', [SupplierController::class, 'destroy'])->name('destroy');
+        });
+
+        // The {supplier} wildcard must be at the very bottom
+        Route::get('/{supplier}', [SupplierController::class, 'show'])->name('show');
     });
 
     // ══════════════════════════════════

@@ -189,4 +189,15 @@ class ProjectController extends Controller
             'custom_class' => 'phase-' . $p->status,
         ]));
     }
+
+    public function destroy(Project $project)
+    {
+        // Delete project (this will cascade or soft delete depending on the model setup)
+        // Since it's critical, we log it before deletion
+        \App\Services\AuditService::log('delete', 'Project', $project->id, $project->toArray(), null, "Menghapus proyek {$project->code}");
+        
+        $project->delete();
+
+        return redirect()->route('projects.index')->with('success', 'Project berhasil dihapus.');
+    }
 }

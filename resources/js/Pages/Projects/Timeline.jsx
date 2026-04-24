@@ -3,21 +3,21 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link } from '@inertiajs/react';
 
 export default function Timeline({ auth, project, phases }) {
-    
+
     // Calculate total duration in days for the timeline span
     const startDates = phases.map(p => new Date(p.start_date || project.created_at));
     const endDates = phases.map(p => new Date(p.end_date || project.deadline));
-    
+
     const minDate = new Date(Math.min(...startDates));
     const maxDate = new Date(Math.max(...endDates));
-    
+
     // Add buffer to max date
     maxDate.setDate(maxDate.getDate() + 7);
-    
+
     const totalDays = Math.max(1, Math.ceil((maxDate - minDate) / (1000 * 60 * 60 * 24)));
 
     const getStatusStyle = (status) => {
-        switch(status) {
+        switch (status) {
             case 'pending': return 'bg-gray-100 border-gray-300 text-gray-700';
             case 'in_progress': return 'bg-blue-100 border-blue-400 text-blue-800 shadow-[0_0_10px_rgba(59,130,246,0.3)]';
             case 'review': return 'bg-yellow-100 border-yellow-400 text-yellow-800';
@@ -27,8 +27,8 @@ export default function Timeline({ auth, project, phases }) {
     };
 
     const getProgressColor = (status) => {
-        if(status === 'completed') return 'bg-green-500';
-        if(status === 'in_progress' || status === 'review') return 'bg-blue-500';
+        if (status === 'completed') return 'bg-green-500';
+        if (status === 'in_progress' || status === 'review') return 'bg-blue-500';
         return 'bg-gray-300';
     };
 
@@ -37,7 +37,7 @@ export default function Timeline({ auth, project, phases }) {
             <Head title={`Timeline - ${project.title}`} />
 
             <div className="max-w-7xl mx-auto space-y-6">
-                
+
                 {/* Header Breadcrumbs */}
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col md:flex-row justify-between md:items-center gap-4">
                     <div>
@@ -50,7 +50,7 @@ export default function Timeline({ auth, project, phases }) {
                         </div>
                         <h2 className="text-xl font-bold text-gray-900 leading-tight">{project.title}</h2>
                     </div>
-                    
+
                     <div className="flex items-center gap-3 bg-gray-50 px-4 py-2 rounded-xl border border-gray-100">
                         <div className="flex items-center gap-1.5 text-xs font-medium text-gray-600"><span className="w-3 h-3 rounded-full bg-gray-200 border border-gray-300"></span> Pending</div>
                         <div className="flex items-center gap-1.5 text-xs font-medium text-gray-600"><span className="w-3 h-3 rounded-full bg-blue-200 border border-blue-400"></span> Progress</div>
@@ -88,7 +88,7 @@ export default function Timeline({ auth, project, phases }) {
                                     // Calculate position and width based on dates
                                     const pStart = new Date(phase.start_date || project.created_at);
                                     const pEnd = new Date(phase.end_date || project.deadline);
-                                    
+
                                     const leftPercent = Math.max(0, ((pStart - minDate) / (1000 * 60 * 60 * 24)) / totalDays * 100);
                                     const widthPercent = Math.max(5, ((pEnd - pStart) / (1000 * 60 * 60 * 24)) / totalDays * 100);
 
@@ -103,17 +103,17 @@ export default function Timeline({ auth, project, phases }) {
                                             {/* Track Area */}
                                             <div className="flex-1 relative h-10 bg-transparent rounded-lg">
                                                 {/* Gantt Bar */}
-                                                <div 
+                                                <div
                                                     className={`absolute top-1 bottom-1 rounded-md border flex items-center overflow-hidden transition-all duration-300 cursor-help ${getStatusStyle(phase.status)}`}
-                                                    style={{ 
-                                                        left: `${Math.min(95, leftPercent)}%`, 
+                                                    style={{
+                                                        left: `${Math.min(95, leftPercent)}%`,
                                                         width: `${Math.min(100 - leftPercent, widthPercent)}%`,
                                                         minWidth: '40px'
                                                     }}
                                                     title={`${phase.name} - ${phase.progress}% (${phase.status})`}
                                                 >
                                                     {/* Progress Fill inside Bar */}
-                                                    <div 
+                                                    <div
                                                         className={`absolute top-0 bottom-0 left-0 opacity-40 ${getProgressColor(phase.status)}`}
                                                         style={{ width: `${phase.progress}%` }}
                                                     ></div>
@@ -138,23 +138,22 @@ export default function Timeline({ auth, project, phases }) {
                             <div className="absolute -right-4 -top-6 text-9xl font-black text-gray-50 opacity-50 pointer-events-none">
                                 {index + 1}
                             </div>
-                            
+
                             <div className="relative z-10">
                                 <div className="flex justify-between items-start mb-3">
-                                    <span className={`px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded border ${
-                                        phase.status === 'completed' ? 'bg-green-50 text-green-700 border-green-200' : 
+                                    <span className={`px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded border ${phase.status === 'completed' ? 'bg-green-50 text-green-700 border-green-200' :
                                         phase.status === 'in_progress' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                                        phase.status === 'review' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' :
-                                        'bg-gray-50 text-gray-600 border-gray-200'
-                                    }`}>
+                                            phase.status === 'review' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' :
+                                                'bg-gray-50 text-gray-600 border-gray-200'
+                                        }`}>
                                         {phase.status.replace('_', ' ')}
                                     </span>
                                     <span className="text-sm font-bold text-gray-800">{phase.progress}%</span>
                                 </div>
-                                
+
                                 <h4 className="font-bold text-gray-900 mb-1">{phase.name}</h4>
                                 <p className="text-xs text-gray-500 mb-4 line-clamp-2 min-h-[32px]">{phase.description || 'Tidak ada deskripsi spesifik.'}</p>
-                                
+
                                 <div className="space-y-2 border-t border-gray-50 pt-3">
                                     <div className="flex justify-between text-xs">
                                         <span className="text-gray-500">Mulai:</span>
@@ -165,7 +164,7 @@ export default function Timeline({ auth, project, phases }) {
                                         <span className="font-medium text-gray-800">{phase.end_date ? new Date(phase.end_date).toLocaleDateString('id-ID') : '-'}</span>
                                     </div>
                                 </div>
-                                
+
                                 {phase.approval_workflow && (
                                     <div className="mt-4 pt-3 border-t border-gray-50">
                                         <Link href={route('approvals.index')} className="text-xs font-bold text-indigo-600 flex items-center hover:text-indigo-800">
