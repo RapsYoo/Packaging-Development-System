@@ -25,13 +25,21 @@ class CheckPermission
             return redirect()->route('login')->with('error', 'Akun Anda telah dinonaktifkan.');
         }
 
-        // Admin always has full access
-        if ($user->isAdmin()) {
-            return $next($request);
-        }
+
 
         if (!$user->hasPermission($permission)) {
             abort(403, 'Anda tidak memiliki izin untuk mengakses fitur ini.');
+        }
+
+        // If trying to modify data (POST, PUT, PATCH, DELETE) but only has 'read' access
+        if (in_array($request->method(), ['POST', 'PUT', 'PATCH', 'DELETE'])) {
+            $accessLevel = $user->role->getAccessLevel($permission);
+            if ($accessLevel === 'read') {
+                if ($request->ajax() || $request->wantsJson()) {
+                    return response()->json(['message' => 'Anda hanya memiliki akses baca (Read Only) untuk fitur ini.'], 403);
+                }
+                abort(403, 'Anda hanya memiliki akses baca (Read Only) untuk fitur ini.');
+            }
         }
 
         return $next($request);

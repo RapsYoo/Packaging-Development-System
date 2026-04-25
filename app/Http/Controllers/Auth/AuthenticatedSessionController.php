@@ -32,9 +32,20 @@ class AuthenticatedSessionController extends Controller
     {
         $request->authenticate();
 
-        $request->session()->regenerate();
-
         $user = Auth::user();
+
+        // Check RBAC Matrix for login permission
+        if (!$user->isAdmin() && !$user->hasPermission('auth.login')) {
+            Auth::guard('web')->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+            
+            return back()->withErrors([
+                'email' => 'Role akun Anda telah diblokir dari akses Login oleh Admin.',
+            ])->onlyInput('email');
+        }
+
+        $request->session()->regenerate();
 
         // Update last login info
         $user->update([

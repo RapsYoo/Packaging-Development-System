@@ -34,6 +34,8 @@ export default function Index({ auth, users, roles, departments, filters }) {
         }
     };
 
+    const canWrite = ['all', 'own'].includes(auth.user.permissions?.['admin.users']);
+
     return (
         <AuthenticatedLayout user={auth.user} header="Manajemen User">
             <Head title="Manajemen User" />
@@ -43,15 +45,17 @@ export default function Index({ auth, users, roles, departments, filters }) {
                 <div className="p-6 border-b border-gray-100">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <h3 className="text-lg font-bold text-gray-800">Daftar Pengguna Sistem</h3>
-                        <Link 
-                            href={route('admin.users.create')} 
-                            className="inline-flex items-center justify-center px-4 py-2 bg-indigo-600 border border-transparent rounded-lg font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors shadow-sm text-sm"
-                        >
-                            <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-                            </svg>
-                            Tambah User
-                        </Link>
+                        {canWrite && (
+                            <Link 
+                                href={route('admin.users.create')} 
+                                className="inline-flex items-center justify-center px-4 py-2 bg-indigo-600 border border-transparent rounded-lg font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors shadow-sm text-sm"
+                            >
+                                <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                                </svg>
+                                Tambah User
+                            </Link>
+                        )}
                     </div>
 
                     <form onSubmit={handleFilter} className="mt-6 flex flex-col sm:flex-row gap-3">
@@ -132,32 +136,49 @@ export default function Index({ auth, users, roles, departments, filters }) {
                                         ) : 'Belum pernah login'}
                                     </td>
                                     <td className="px-6 py-4">
-                                        <button 
-                                            onClick={() => toggleStatus(user)}
-                                            className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
+                                        {canWrite ? (
+                                            <button 
+                                                onClick={() => toggleStatus(user)}
+                                                className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
+                                                    user.is_active 
+                                                        ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100' 
+                                                        : 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'
+                                                }`}
+                                            >
+                                                <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${user.is_active ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                                                {user.is_active ? 'Aktif' : 'Nonaktif'}
+                                            </button>
+                                        ) : (
+                                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${
                                                 user.is_active 
-                                                    ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100' 
-                                                    : 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'
-                                            }`}
-                                        >
-                                            <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${user.is_active ? 'bg-green-500' : 'bg-red-500'}`}></span>
-                                            {user.is_active ? 'Aktif' : 'Nonaktif'}
-                                        </button>
+                                                    ? 'bg-green-50 text-green-700 border-green-200' 
+                                                    : 'bg-red-50 text-red-700 border-red-200'
+                                            }`}>
+                                                <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${user.is_active ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                                                {user.is_active ? 'Aktif' : 'Nonaktif'}
+                                            </span>
+                                        )}
                                     </td>
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex items-center justify-end gap-2">
-                                            <Link href={route('admin.users.edit', user.id)} className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors" title="Edit Data">
-                                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                                            </Link>
-                                            <button onClick={() => resetPassword(user)} className="p-1.5 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors" title="Reset Password">
-                                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>
-                                            </button>
+                                            {canWrite && (
+                                                <>
+                                                    <Link href={route('admin.users.edit', user.id)} className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors" title="Edit Data">
+                                                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                                                    </Link>
+                                                    <button onClick={() => resetPassword(user)} className="p-1.5 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors" title="Reset Password">
+                                                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>
+                                                    </button>
+                                                </>
+                                            )}
                                             <Link href={route('admin.users.activity', user.id)} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Audit Trail">
                                                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
                                             </Link>
-                                            <button onClick={() => destroyUser(user)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Hapus User">
-                                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                            </button>
+                                            {canWrite && (
+                                                <button onClick={() => destroyUser(user)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Hapus User">
+                                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                                </button>
+                                            )}
                                         </div>
                                     </td>
                                 </tr>

@@ -15,15 +15,22 @@ class PasswordController extends Controller
      */
     public function update(Request $request): RedirectResponse
     {
+        $user = $request->user();
+
+        // Check RBAC Matrix for password change permission
+        if (!$user->isAdmin() && !$user->hasPermission('auth.password')) {
+            return back()->with('error', 'Role Anda tidak memiliki izin untuk mengubah password.');
+        }
+
         $validated = $request->validate([
             'current_password' => ['required', 'current_password'],
             'password' => ['required', Password::defaults(), 'confirmed'],
         ]);
 
-        $request->user()->update([
+        $user->update([
             'password' => Hash::make($validated['password']),
         ]);
 
-        return back();
+        return back()->with('success', 'Password berhasil diubah.');
     }
 }

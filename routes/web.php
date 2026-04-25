@@ -58,10 +58,12 @@ Route::middleware(['auth', 'verified', 'auto.logout'])->group(function () {
         Route::get('/dashboard', [RbacController::class, 'dashboard'])->name('dashboard');
 
         // User Management (CRUD)
-        Route::resource('users', UserController::class)->except(['show']);
-        Route::post('/users/{user}/toggle-status', [UserController::class, 'toggleStatus'])->name('users.toggleStatus');
-        Route::post('/users/{user}/reset-password', [UserController::class, 'resetPassword'])->name('users.resetPassword');
-        Route::get('/users/{user}/activity', [UserController::class, 'activityLog'])->name('users.activity');
+        Route::middleware('permission:admin.users')->group(function () {
+            Route::resource('users', UserController::class)->except(['show']);
+            Route::post('/users/{user}/toggle-status', [UserController::class, 'toggleStatus'])->name('users.toggleStatus');
+            Route::post('/users/{user}/reset-password', [UserController::class, 'resetPassword'])->name('users.resetPassword');
+            Route::get('/users/{user}/activity', [UserController::class, 'activityLog'])->name('users.activity');
+        });
 
         // RBAC Configuration
         Route::get('/rbac', [RbacController::class, 'index'])->name('rbac.index');

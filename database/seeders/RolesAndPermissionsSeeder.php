@@ -77,60 +77,60 @@ class RolesAndPermissionsSeeder extends Seeder
         // RBAC Matrix: role_slug => [permission_slug => access_level]
         $matrix = [
             'admin' => [
-                'auth.login' => 'full', 'auth.password' => 'full',
-                'admin.dashboard' => 'full', 'admin.users' => 'full', 'admin.rbac' => 'full',
-                'project.brief' => 'full', 'project.view' => 'full', 'project.timeline' => 'full',
-                'approval.concept' => 'full', 'approval.drawing' => 'full', 'approval.artwork' => 'full', 'approval.history' => 'full',
-                'packaging.master' => 'full', 'packaging.color' => 'full',
-                'supplier.master' => 'full', 'supplier.trial' => 'full', 'supplier.quotation' => 'full', 'supplier.substitution' => 'full',
-                'qc.inspection' => 'full', 'qc.transport' => 'full', 'qc.history' => 'full',
-                'notification.receive' => 'full', 'notification.export' => 'full', 'audit.read' => 'full',
+                'auth.login' => 'all', 'auth.password' => 'all',
+                'admin.dashboard' => 'all', 'admin.users' => 'all', 'admin.rbac' => 'all',
+                'project.brief' => 'all', 'project.view' => 'all', 'project.timeline' => 'all',
+                'approval.concept' => 'all', 'approval.drawing' => 'all', 'approval.artwork' => 'all', 'approval.history' => 'all',
+                'packaging.master' => 'all', 'packaging.color' => 'all',
+                'supplier.master' => 'all', 'supplier.trial' => 'all', 'supplier.quotation' => 'all', 'supplier.substitution' => 'all',
+                'qc.inspection' => 'all', 'qc.transport' => 'all', 'qc.history' => 'all',
+                'notification.receive' => 'all', 'notification.export' => 'all', 'audit.read' => 'all',
             ],
             'marketing' => [
-                'auth.login' => 'full', 'auth.password' => 'full',
-                'project.brief' => 'full', 'project.view' => 'full', 'project.timeline' => 'full',
-                'approval.artwork' => 'full', 'approval.history' => 'full',
-                'packaging.color' => 'full',
-                'notification.receive' => 'full',
+                'auth.login' => 'all', 'auth.password' => 'all',
+                'project.brief' => 'all', 'project.view' => 'all', 'project.timeline' => 'all',
+                'approval.artwork' => 'all', 'approval.history' => 'all',
+                'packaging.color' => 'all',
+                'notification.receive' => 'all',
             ],
             'bod' => [
-                'auth.login' => 'full', 'auth.password' => 'full',
-                'project.view' => 'full',
-                'approval.concept' => 'full', 'approval.drawing' => 'full', 'approval.history' => 'full',
-                'notification.receive' => 'full',
+                'auth.login' => 'all', 'auth.password' => 'all',
+                'project.view' => 'all',
+                'approval.concept' => 'all', 'approval.drawing' => 'all', 'approval.history' => 'all',
+                'notification.receive' => 'all',
             ],
             'rd' => [
-                'auth.login' => 'full', 'auth.password' => 'full',
-                'project.view' => 'full',
-                'approval.drawing' => 'full', 'approval.artwork' => 'full', 'approval.history' => 'full',
-                'packaging.master' => 'full', 'packaging.color' => 'full',
-                'supplier.trial' => 'full', 'supplier.substitution' => 'full',
-                'qc.history' => 'full',
-                'notification.receive' => 'full',
+                'auth.login' => 'all', 'auth.password' => 'all',
+                'project.view' => 'all',
+                'approval.drawing' => 'all', 'approval.artwork' => 'all', 'approval.history' => 'all',
+                'packaging.master' => 'all', 'packaging.color' => 'all',
+                'supplier.trial' => 'all', 'supplier.substitution' => 'all',
+                'qc.history' => 'all',
+                'notification.receive' => 'all',
             ],
             'supplier' => [
-                'auth.login' => 'full', 'auth.password' => 'full',
-                'project.view' => 'full',
+                'auth.login' => 'all', 'auth.password' => 'all',
+                'project.view' => 'all',
                 'approval.history' => 'read',
-                'supplier.trial' => 'full', 'supplier.quotation' => 'full',
-                'notification.receive' => 'full',
+                'supplier.trial' => 'all', 'supplier.quotation' => 'all',
+                'notification.receive' => 'all',
             ],
             'scm' => [
-                'auth.login' => 'full', 'auth.password' => 'full',
-                'project.view' => 'full',
-                'approval.drawing' => 'full', 'approval.history' => 'full',
-                'supplier.master' => 'full', 'supplier.quotation' => 'full', 'supplier.substitution' => 'full',
-                'qc.history' => 'full',
-                'notification.receive' => 'full', 'notification.export' => 'full',
+                'auth.login' => 'all', 'auth.password' => 'all',
+                'project.view' => 'all', 'project.timeline' => 'read',
+                'approval.drawing' => 'all', 'approval.history' => 'all',
+                'supplier.master' => 'all', 'supplier.quotation' => 'all', 'supplier.substitution' => 'all',
+                'qc.history' => 'all',
+                'notification.receive' => 'all', 'notification.export' => 'all',
             ],
             'qc' => [
-                'auth.login' => 'full', 'auth.password' => 'full',
-                'project.view' => 'full',
-                'approval.artwork' => 'full', 'approval.history' => 'full',
-                'packaging.color' => 'full',
-                'supplier.substitution' => 'full',
-                'qc.inspection' => 'full', 'qc.transport' => 'full', 'qc.history' => 'full',
-                'notification.receive' => 'full', 'notification.export' => 'full',
+                'auth.login' => 'all', 'auth.password' => 'all',
+                'project.view' => 'all',
+                'approval.artwork' => 'all', 'approval.history' => 'all',
+                'packaging.color' => 'all',
+                'supplier.substitution' => 'all',
+                'qc.inspection' => 'all', 'qc.transport' => 'all', 'qc.history' => 'all',
+                'notification.receive' => 'all', 'notification.export' => 'all',
             ],
         ];
 
@@ -150,17 +150,26 @@ class RolesAndPermissionsSeeder extends Seeder
 
         // Create default admin user
         $adminRole = Role::where('slug', 'admin')->first();
-        User::firstOrCreate(
-            ['email' => 'admin@priskila.co.id'],
-            [
+        $adminUser = User::withTrashed()->where('email', 'admin@priskila.co.id')->first();
+        if ($adminUser) {
+            if ($adminUser->trashed()) $adminUser->restore();
+            $adminUser->update([
+                'name' => 'System Administrator',
+                'role_id' => $adminRole->id,
+                'department' => 'IT',
+                'is_active' => true,
+            ]);
+        } else {
+            User::create([
+                'email' => 'admin@priskila.co.id',
                 'name' => 'System Administrator',
                 'password' => Hash::make('admin123'),
                 'role_id' => $adminRole->id,
                 'department' => 'IT',
                 'is_active' => true,
                 'email_verified_at' => now(),
-            ]
-        );
+            ]);
+        }
 
         // Create demo users for each role
         $demoUsers = [
@@ -174,17 +183,30 @@ class RolesAndPermissionsSeeder extends Seeder
 
         foreach ($demoUsers as $demo) {
             $role = Role::where('slug', $demo['role'])->first();
-            User::firstOrCreate(
-                ['email' => $demo['email']],
-                [
+            $user = User::withTrashed()->where('email', $demo['email'])->first();
+            
+            if ($user) {
+                // If it was soft-deleted, restore it
+                if ($user->trashed()) {
+                    $user->restore();
+                }
+                $user->update([
                     'name' => $demo['name'],
+                    'role_id' => $role->id,
+                    'department' => $demo['dept'],
+                    'is_active' => true,
+                ]);
+            } else {
+                User::create([
+                    'name' => $demo['name'],
+                    'email' => $demo['email'],
                     'password' => Hash::make('password123'),
                     'role_id' => $role->id,
                     'department' => $demo['dept'],
                     'is_active' => true,
                     'email_verified_at' => now(),
-                ]
-            );
+                ]);
+            }
         }
     }
 }
