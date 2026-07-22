@@ -2,10 +2,10 @@ import React from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 
-export default function Create({ auth, users }) {
+export default function Create({ auth, users, preselectedType = 'NPD' }) {
     const { data, setData, post, processing, errors } = useForm({
         title: '',
-        type: 'NPD',
+        type: preselectedType,
         concept: '',
         target_cogs: '',
         target_market: '',
@@ -28,7 +28,7 @@ export default function Create({ auth, users }) {
             <div className="max-w-4xl mx-auto">
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                     <div className="px-6 py-5 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
-                        <h3 className="font-bold text-gray-800">Formulir NPD / EPD Brief</h3>
+                        <h3 className="font-bold text-gray-800">Formulir {preselectedType === 'Substitusi' ? 'Substitusi Bahan Kemas' : `${preselectedType} Brief`}</h3>
                         <Link href={route('projects.index')} className="text-sm font-medium text-gray-500 hover:text-indigo-600 transition-colors">
                             &larr; Batal & Kembali
                         </Link>
@@ -52,21 +52,7 @@ export default function Create({ auth, users }) {
                                     {errors.title && <p className="mt-1 text-xs text-red-600 font-medium">{errors.title}</p>}
                                 </div>
 
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Tipe Pengembangan <span className="text-red-500">*</span></label>
-                                    <select 
-                                        value={data.type} 
-                                        onChange={e => setData('type', e.target.value)}
-                                        className="w-full rounded-lg border-gray-200 focus:border-indigo-500 focus:ring-indigo-500 text-sm font-medium text-gray-700"
-                                    >
-                                        <option value="NPD">New Product Development (NPD)</option>
-                                        <option value="EPD">Existing Product Development (EPD)</option>
-                                        <option value="Substitusi">Substitusi Material Kemasan</option>
-                                    </select>
-                                    {errors.type && <p className="mt-1 text-xs text-red-600 font-medium">{errors.type}</p>}
-                                </div>
-
-                                <div>
+                                <div className="col-span-2 md:col-span-1">
                                     <label className="block text-sm font-medium text-gray-700 mb-2">Batas Waktu (Deadline) <span className="text-red-500">*</span></label>
                                     <input 
                                         type="date" 
@@ -79,51 +65,53 @@ export default function Create({ auth, users }) {
                             </div>
                         </div>
 
-                        {/* Section 2: Marketing & Concept */}
-                        <div className="space-y-6">
-                            <h4 className="text-sm font-bold text-indigo-600 uppercase tracking-wider border-b border-indigo-100 pb-2">2. Detail Konsep & Target</h4>
-                            
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="col-span-2">
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Deskripsi Konsep Kemasan</label>
-                                    <textarea 
-                                        value={data.concept} 
-                                        onChange={e => setData('concept', e.target.value)}
-                                        rows="4"
-                                        className="w-full rounded-lg border-gray-200 focus:ring-indigo-500 text-sm"
-                                        placeholder="Deskripsikan bentuk, warna, desain, atau referensi visual (seperti brand A, model B)..."
-                                    ></textarea>
-                                </div>
+                        {/* Section 2: Marketing & Concept (Sembunyikan untuk Substitusi) */}
+                        {preselectedType !== 'Substitusi' && (
+                            <div className="space-y-6">
+                                <h4 className="text-sm font-bold text-indigo-600 uppercase tracking-wider border-b border-indigo-100 pb-2">2. Detail Konsep & Target</h4>
+                                
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="col-span-2">
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">Deskripsi Konsep Kemasan</label>
+                                        <textarea 
+                                            value={data.concept} 
+                                            onChange={e => setData('concept', e.target.value)}
+                                            rows="4"
+                                            className="w-full rounded-lg border-gray-200 focus:ring-indigo-500 text-sm"
+                                            placeholder="Deskripsikan bentuk, warna, desain, atau referensi visual (seperti brand A, model B)..."
+                                        ></textarea>
+                                    </div>
 
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Target COGS (Rp)</label>
-                                    <div className="relative">
-                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                            <span className="text-gray-500 sm:text-sm">Rp</span>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">Target COGS (Rp)</label>
+                                        <div className="relative">
+                                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                <span className="text-gray-500 sm:text-sm">Rp</span>
+                                            </div>
+                                            <input 
+                                                type="number" 
+                                                value={data.target_cogs} 
+                                                onChange={e => setData('target_cogs', e.target.value)}
+                                                className="w-full rounded-lg border-gray-200 pl-10 focus:ring-indigo-500 text-sm"
+                                                placeholder="Contoh: 5000"
+                                            />
                                         </div>
+                                        <p className="text-xs text-gray-400 mt-1">Target biaya produksi per unit (jika ada).</p>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">Target Market / Demografi</label>
                                         <input 
-                                            type="number" 
-                                            value={data.target_cogs} 
-                                            onChange={e => setData('target_cogs', e.target.value)}
-                                            className="w-full rounded-lg border-gray-200 pl-10 focus:ring-indigo-500 text-sm"
-                                            placeholder="Contoh: 5000"
+                                            type="text" 
+                                            value={data.target_market} 
+                                            onChange={e => setData('target_market', e.target.value)}
+                                            className="w-full rounded-lg border-gray-200 focus:ring-indigo-500 text-sm"
+                                            placeholder="Remaja wanita usia 15-25 tahun..."
                                         />
                                     </div>
-                                    <p className="text-xs text-gray-400 mt-1">Target biaya produksi per unit (jika ada).</p>
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Target Market / Demografi</label>
-                                    <input 
-                                        type="text" 
-                                        value={data.target_market} 
-                                        onChange={e => setData('target_market', e.target.value)}
-                                        className="w-full rounded-lg border-gray-200 focus:ring-indigo-500 text-sm"
-                                        placeholder="Remaja wanita usia 15-25 tahun..."
-                                    />
                                 </div>
                             </div>
-                        </div>
+                        )}
 
                         {/* Section 3: Assignment & Notes */}
                         <div className="space-y-6">

@@ -28,9 +28,13 @@ class ColorStandardController extends Controller
         }
         
         $colors = $query->orderBy('created_at', 'desc')->paginate(15)->withQueryString();
+
+        $masterSpecs = \App\Models\MasterPackagingSpec::select('id', 'item_code_rm', 'item_name_rm')
+            ->orderBy('item_name_rm')->get();
         
         return Inertia::render('Packaging/Colors/Index', [
             'colors' => $colors,
+            'masterSpecs' => $masterSpecs,
             'filters' => $request->only(['search', 'status'])
         ]);
     }

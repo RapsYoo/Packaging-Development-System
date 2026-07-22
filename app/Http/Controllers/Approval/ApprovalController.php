@@ -7,6 +7,7 @@ use App\Models\ApprovalWorkflow;
 use App\Models\ApprovalStep;
 use App\Models\Project;
 use App\Services\AuditService;
+use App\Services\GatingService;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -15,21 +16,35 @@ class ApprovalController extends Controller
 {
     public function index(Request $request)
     {
-        $query = ApprovalWorkflow::with(['project', 'initiator', 'steps']);
-        
-        if ($request->filled('type')) {
-            $query->where('type', $request->type);
-        }
-        
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
-        
-        $workflows = $query->orderBy('created_at', 'desc')->paginate(15)->withQueryString();
-        
+        $userRole = auth()->user()->role->slug;
+
+        // Pending: approval steps yang role_required = role user ini DAN status masih pending
+        // DAN workflow-nya masih aktif (pending/in_progress)
+        $pendingApprovals = ApprovalStep::with(['workflow.project', 'workflow.initiator'])
+            ->where('role_required', $userRole)
+            ->where('status', 'pending')
+            ->whereHas('workflow', function ($q) {
+                $q->whereIn('status', ['pending', 'in_progress']);
+            })
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->filter(function ($step) {
+                // Hanya tampilkan jika ini giliran step ini (step_order == current_step)
+                return $step->workflow && $step->step_order == $step->workflow->current_step;
+            })
+            ->values();
+
+        // History: approval steps yang sudah di-decide oleh role ini
+        $myHistory = ApprovalStep::with(['workflow.project', 'workflow.initiator'])
+            ->where('role_required', $userRole)
+            ->whereIn('status', ['approved', 'rejected'])
+            ->orderBy('decided_at', 'desc')
+            ->get();
+
         return Inertia::render('Approvals/Index', [
-            'workflows' => $workflows,
-            'filters' => $request->only(['type', 'status'])
+            'pendingApprovals' => $pendingApprovals,
+            'myHistory' => $myHistory,
+            'filters' => $request->only(['type', 'status']),
         ]);
     }
 
@@ -44,6 +59,9 @@ class ApprovalController extends Controller
 
     public function createConceptApproval(Project $project)
     {
+        if ($project->type === 'Substitusi') {
+            return back()->with('error', 'Proyek Substitusi Bahan Kemas tidak memerlukan Evaluasi Konsep (BOD).');
+        }
         $workflow = ApprovalWorkflow::create([
             'project_id' => $project->id,
             'type' => 'concept',
@@ -67,33 +85,45 @@ class ApprovalController extends Controller
 
     public function createArtworkApproval(Request $request, Project $project)
     {
-        $steps = ['qc' => 1, 'rd' => 2, 'marketing' => 3]; // QC→R&D→Marketing
+        // Hard Gating: Concept Approval harus sudah disetujui
+        $gate = GatingService::canStartArtworkApproval($project);
+        if (!$gate['allowed']) {
+            return back()->with('error', $gate['reason']);
+        }
+
+        $roles = ['rd', 'qc', 'qa', 'marketing']; // Paralel 4 pihak
         
         $workflow = ApprovalWorkflow::create([
             'project_id' => $project->id,
             'type' => 'artwork',
             'status' => 'in_progress',
             'current_step' => 1,
-            'total_steps' => count($steps),
+            'total_steps' => 1, // Semua langkah ada di urutan 1
             'initiated_by' => auth()->id(),
         ]);
         
-        foreach ($steps as $role => $order) {
+        foreach ($roles as $role) {
             ApprovalStep::create([
                 'workflow_id' => $workflow->id, 
-                'step_order' => $order, 
+                'step_order' => 1, 
                 'role_required' => $role, 
                 'status' => 'pending'
             ]);
         }
         
-        NotificationService::sendToRole('qc', 'Artwork Review', "Artwork project {$project->code} membutuhkan review.", 'approval', route('approvals.show', $workflow));
+        NotificationService::sendToRoles($roles, 'Artwork Review', "Artwork project {$project->code} membutuhkan review Anda.", 'approval', route('approvals.show', $workflow));
         
         return redirect()->route('approvals.show', $workflow)->with('success', 'Sirkulasi artwork berhasil dimulai.');
     }
 
     public function createDrawingApproval(Request $request, Project $project)
     {
+        // Hard Gating: Artwork Approval harus sudah disetujui
+        $gate = GatingService::canStartDrawingApproval($project);
+        if (!$gate['allowed']) {
+            return back()->with('error', $gate['reason']);
+        }
+
         $steps = ['scm' => 1, 'bod' => 2];
         
         $workflow = ApprovalWorkflow::create([
@@ -136,15 +166,23 @@ class ApprovalController extends Controller
         $workflow = $step->workflow;
 
         if ($request->decision === 'approved') {
-            if ($step->step_order < $workflow->total_steps) {
-                $workflow->increment('current_step');
-                $nextStep = $workflow->steps()->where('step_order', $workflow->current_step)->first();
-                if ($nextStep) {
-                    NotificationService::sendToRole($nextStep->role_required, 'Approval Pending', "Anda memiliki approval baru untuk ditindaklanjuti.", 'approval', route('approvals.show', $workflow));
+            $pendingInCurrentStep = $workflow->steps()
+                ->where('step_order', $workflow->current_step)
+                ->where('status', '!=', 'approved')
+                ->count();
+
+            if ($pendingInCurrentStep === 0) {
+                if ($workflow->current_step < $workflow->total_steps) {
+                    $workflow->increment('current_step');
+                    $nextSteps = $workflow->steps()->where('step_order', $workflow->current_step)->get();
+                    if ($nextSteps->count() > 0) {
+                        $roles = $nextSteps->pluck('role_required')->toArray();
+                        NotificationService::sendToRoles($roles, 'Approval Pending', "Anda memiliki approval baru untuk ditindaklanjuti.", 'approval', route('approvals.show', $workflow));
+                    }
+                } else {
+                    $workflow->update(['status' => 'approved']);
+                    NotificationService::sendToUser($workflow->initiated_by, 'Approval Disetujui', "Approval {$workflow->type} untuk project telah disetujui sepenuhnya.", 'success', route('approvals.show', $workflow));
                 }
-            } else {
-                $workflow->update(['status' => 'approved']);
-                NotificationService::sendToUser($workflow->initiated_by, 'Approval Disetujui', "Approval {$workflow->type} untuk project telah disetujui.", 'success', route('approvals.show', $workflow));
             }
         } else {
             $workflow->update(['status' => 'rejected']);

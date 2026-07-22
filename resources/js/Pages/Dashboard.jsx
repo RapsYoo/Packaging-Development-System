@@ -2,7 +2,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link } from '@inertiajs/react';
 
 export default function Dashboard({ auth, role, activeProjects, ...props }) {
-    
+
     // Helper component for Stat Cards
     const StatCard = ({ title, value, icon, colorClass, link }) => (
         <div className="bg-white rounded-2xl p-6 shadow-[0_2px_12px_rgba(0,0,0,0.04)] border border-gray-100 flex items-center justify-between group transition-all hover:shadow-md">
@@ -70,20 +70,7 @@ export default function Dashboard({ auth, role, activeProjects, ...props }) {
             <Head title="Dashboard" />
 
             <div className="space-y-6">
-                {/* Greeting Section */}
-                <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-6 sm:p-8 text-white shadow-lg relative overflow-hidden">
-                    <div className="relative z-10">
-                        <h1 className="text-2xl sm:text-3xl font-bold mb-2">Selamat datang, {auth.user.name}!</h1>
-                        <p className="text-indigo-100 max-w-xl text-sm sm:text-base">
-                            Anda login sebagai <span className="font-semibold px-2 py-0.5 rounded bg-white/20">{auth.user.role?.name}</span>. 
-                            Pantau dan kelola alur pengembangan kemasan PT. Priskila Prima Makmur.
-                        </p>
-                    </div>
-                    {/* Abstract bg shapes */}
-                    <svg className="absolute right-0 bottom-0 opacity-10 w-64 h-64 transform translate-x-1/3 translate-y-1/3" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-                        <path fill="#FFFFFF" d="M42.7,-73.4C55.9,-67.6,67.6,-56.3,76.5,-42.8C85.4,-29.3,91.5,-14.7,91.8,0.2C92.1,15.1,86.6,30.2,76.7,42.5C66.8,54.8,52.5,64.3,38.2,71.5C23.9,78.7,9.6,83.6,-4.8,88.4C-19.2,93.2,-33.8,97.9,-46.6,92.5C-59.4,87.1,-70.4,71.6,-78.3,55.5C-86.2,39.4,-91.1,22.7,-91.2,6C-91.3,-10.7,-86.6,-27.4,-77.8,-41.8C-69,-56.2,-56.1,-68.3,-41.8,-73.5C-27.5,-78.7,-13.7,-77,1.4,-78.4C16.5,-79.8,33,-84.3,42.7,-73.4Z" transform="translate(100 100)" />
-                    </svg>
-                </div>
+
 
                 {/* --- ADMIN DASHBOARD --- */}
                 {role === 'admin' && (
@@ -156,7 +143,7 @@ export default function Dashboard({ auth, role, activeProjects, ...props }) {
                     </>
                 )}
 
-                {/* Fallback for other roles (BOD, R&D, SCM, Supplier) */}
+                {/* Fallback for other roles (BOD, R&D, SCM, QA) */}
                 {!['admin', 'marketing', 'qc'].includes(role) && (
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <StatCard title="Total Proyek" value={props.totalProjects} icon="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2" colorClass="bg-blue-50 text-blue-600" link={route('projects.index')} />
@@ -171,7 +158,7 @@ export default function Dashboard({ auth, role, activeProjects, ...props }) {
                         )}
                     </div>
                 )}
-                
+
                 {/* Always show active projects at the bottom for other roles */}
                 {!['admin', 'marketing', 'qc'].includes(role) && (
                     <div className="mt-6">

@@ -11,7 +11,7 @@ class Inspection extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'packaging_item_id', 'project_id', 'type', 'checklist',
+        'master_spec_id', 'project_id', 'type', 'checklist',
         'result', 'notes', 'photos', 'inspector_id',
     ];
 
@@ -20,9 +20,9 @@ class Inspection extends Model
         'photos' => 'array',
     ];
 
-    public function packagingItem()
+    public function masterSpec()
     {
-        return $this->belongsTo(PackagingItem::class);
+        return $this->belongsTo(MasterPackagingSpec::class, 'master_spec_id');
     }
 
     public function project()

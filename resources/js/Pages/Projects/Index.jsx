@@ -13,7 +13,7 @@ export default function Index({ auth, projects, filters }) {
     };
 
     const getStatusColor = (status) => {
-        switch(status) {
+        switch (status) {
             case 'draft': return 'bg-gray-100 text-gray-700 border-gray-200';
             case 'submitted': return 'bg-blue-100 text-blue-700 border-blue-200';
             case 'active': return 'bg-indigo-100 text-indigo-700 border-indigo-200';
@@ -36,33 +36,22 @@ export default function Index({ auth, projects, filters }) {
                             <h3 className="text-lg font-bold text-gray-800">Daftar Proyek (NPD / EPD)</h3>
                             <p className="text-sm text-gray-500 mt-1">Pantau seluruh pipeline pengembangan kemasan dari tahap konsep hingga Go-Live.</p>
                         </div>
-                        
-                        {canCreateProject && (
-                            <Link 
-                                href={route('projects.create')} 
-                                className="inline-flex items-center justify-center px-4 py-2 bg-indigo-600 border border-transparent rounded-lg font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors shadow-sm text-sm shrink-0"
-                            >
-                                <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-                                </svg>
-                                Buat Project Brief
-                            </Link>
-                        )}
+
                     </div>
 
                     <form onSubmit={handleFilter} className="mt-6 flex flex-col sm:flex-row gap-3">
                         <div className="flex-1">
-                            <input 
-                                type="text" 
-                                placeholder="Cari kode atau judul proyek..." 
+                            <input
+                                type="text"
+                                placeholder="Cari kode atau judul proyek..."
                                 value={search}
                                 onChange={e => setSearch(e.target.value)}
                                 className="w-full rounded-lg border-gray-200 focus:border-indigo-500 focus:ring-indigo-500 text-sm"
                             />
                         </div>
                         <div className="sm:w-48">
-                            <select 
-                                value={typeFilter} 
+                            <select
+                                value={typeFilter}
                                 onChange={e => setTypeFilter(e.target.value)}
                                 className="w-full rounded-lg border-gray-200 focus:border-indigo-500 focus:ring-indigo-500 text-sm text-gray-700"
                             >
@@ -73,8 +62,8 @@ export default function Index({ auth, projects, filters }) {
                             </select>
                         </div>
                         <div className="sm:w-48">
-                            <select 
-                                value={statusFilter} 
+                            <select
+                                value={statusFilter}
                                 onChange={e => setStatusFilter(e.target.value)}
                                 className="w-full rounded-lg border-gray-200 focus:border-indigo-500 focus:ring-indigo-500 text-sm text-gray-700"
                             >
@@ -103,7 +92,7 @@ export default function Index({ auth, projects, filters }) {
                                         {project.type}
                                     </span>
                                 </div>
-                                
+
                                 <Link href={route('projects.show', project.id)} className="block group-hover:text-indigo-600 transition-colors">
                                     <h4 className="text-lg font-bold text-gray-900 leading-tight mb-1">{project.title}</h4>
                                     <p className="text-xs font-mono text-gray-500 mb-4">{project.code}</p>
@@ -120,7 +109,7 @@ export default function Index({ auth, projects, filters }) {
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <div className="px-5 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between mt-auto">
                                 <div className="w-full mr-4">
                                     <div className="flex justify-between text-xs mb-1.5">
@@ -131,8 +120,8 @@ export default function Index({ auth, projects, filters }) {
                                         <div className="bg-gradient-to-r from-indigo-500 to-purple-500 h-2 rounded-full transition-all duration-500" style={{ width: `${project.progress || 0}%` }}></div>
                                     </div>
                                 </div>
-                                <Link 
-                                    href={route('projects.show', project.id)} 
+                                <Link
+                                    href={route('projects.show', project.id)}
                                     className="p-2 text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors"
                                 >
                                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
@@ -143,12 +132,7 @@ export default function Index({ auth, projects, filters }) {
                         <div className="col-span-full py-16 text-center">
                             <svg className="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
                             <h4 className="text-lg font-bold text-gray-700">Belum ada proyek kemasan</h4>
-                            <p className="text-gray-500 mt-1 max-w-md mx-auto">Mulai dengan membuat pengajuan Project Brief pertama Anda untuk melacak pengembangan NPD/EPD.</p>
-                            {canCreateProject && (
-                                <Link href={route('projects.create')} className="inline-block mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium text-sm hover:bg-indigo-700">
-                                    Buat Brief Sekarang
-                                </Link>
-                            )}
+                            <p className="text-gray-500 mt-1 max-w-md mx-auto">Silakan pilih tipe proyek di menu sidebar untuk membuat Project Brief baru.</p>
                         </div>
                     )}
                 </div>
@@ -158,9 +142,9 @@ export default function Index({ auth, projects, filters }) {
                         <span className="text-sm text-gray-500">Menampilkan {projects.from || 0} - {projects.to || 0} dari {projects.total} proyek</span>
                         <div className="flex items-center gap-1">
                             {projects.links.map((link, i) => (
-                                <Link 
-                                    key={i} 
-                                    href={link.url} 
+                                <Link
+                                    key={i}
+                                    href={link.url}
                                     className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${link.active ? 'bg-indigo-600 text-white font-medium shadow-sm' : 'text-gray-500 hover:bg-gray-100'}`}
                                     dangerouslySetInnerHTML={{ __html: link.label }}
                                 />

@@ -92,15 +92,14 @@ class DashboardController extends Controller
                 })->count();
                 break;
 
-            case 'supplier':
+            case 'qa':
                 $data['totalProjects'] = Project::active()->count();
-                $data['myQuotations'] = Quotation::where('submitted_by', $user->id)
-                    ->with('supplier')
-                    ->orderBy('created_at', 'desc')
-                    ->take(10)->get();
-                $data['myTrials'] = \App\Models\SupplierTrial::whereHas('supplier', function ($q) use ($user) {
-                    // Supplier sees their own trials (assuming user->supplier relationship exists)
-                })->orderBy('created_at', 'desc')->take(10)->get();
+                $data['pendingApprovals'] = ApprovalWorkflow::whereHas('steps', function ($q) {
+                    $q->where('role_required', 'qa')->where('status', 'pending');
+                })->count();
+                $data['pendingPackagingApprovals'] = \App\Models\PackagingApproval::where('status', 'submitted')
+                    ->where('decision_qa', 'pending')
+                    ->count();
                 break;
 
             default:

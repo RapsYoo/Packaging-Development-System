@@ -5,7 +5,7 @@ namespace App\Http\Controllers\QC;
 use App\Http\Controllers\Controller;
 use App\Models\Inspection;
 use App\Models\TransportTest;
-use App\Models\PackagingItem;
+use App\Models\MasterPackagingSpec;
 use App\Models\Project;
 use App\Services\AuditService;
 use Illuminate\Http\Request;
@@ -16,7 +16,7 @@ class InspectionController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Inspection::with(['packagingItem', 'project', 'inspector']);
+        $query = Inspection::with(['masterSpec', 'project', 'inspector']);
         
         if ($request->filled('type')) {
             $query->where('type', $request->type);
@@ -35,11 +35,11 @@ class InspectionController extends Controller
 
     public function create()
     {
-        $packagingItems = PackagingItem::where('status', 'active')->get(['id', 'name', 'code']);
+        $masterSpecs = MasterPackagingSpec::select('id', 'item_code_rm', 'item_name_rm')->orderBy('item_name_rm')->get();
         $projects = Project::active()->get(['id', 'title', 'code']);
         
         return Inertia::render('QC/Inspections/Create', [
-            'packagingItems' => $packagingItems,
+            'masterSpecs' => $masterSpecs,
             'projects' => $projects
         ]);
     }
@@ -47,7 +47,7 @@ class InspectionController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'packaging_item_id' => 'nullable|exists:packaging_items,id',
+            'master_spec_id' => 'nullable|exists:master_packaging_specs,id',
             'project_id' => 'nullable|exists:projects,id',
             'type' => 'required|in:T0,T1,T2',
             'checklist' => 'nullable|array',
@@ -64,7 +64,7 @@ class InspectionController extends Controller
         }
 
         $inspection = Inspection::create([
-            'packaging_item_id' => $request->packaging_item_id,
+            'master_spec_id' => $request->master_spec_id,
             'project_id' => $request->project_id,
             'type' => $request->type,
             'checklist' => $request->checklist ?? [],
@@ -81,7 +81,7 @@ class InspectionController extends Controller
 
     public function show(Inspection $inspection)
     {
-        $inspection->load(['packagingItem', 'project', 'inspector', 'transportTests.tester']);
+        $inspection->load(['masterSpec', 'project', 'inspector', 'transportTests.tester']);
         
         return Inertia::render('QC/Inspections/Show', [
             'inspection' => $inspection
@@ -112,7 +112,7 @@ class InspectionController extends Controller
     
     public function history(Request $request)
     {
-        $query = Inspection::with(['packagingItem', 'project', 'inspector']);
+        $query = Inspection::with(['masterSpec', 'project', 'inspector']);
         
         if ($request->filled('type')) {
             $query->where('type', $request->type);

@@ -17,13 +17,6 @@ class QuotationController extends Controller
     {
         $query = Quotation::with(['supplier', 'project', 'submitter']);
         
-        // Suppliers can only see their own quotations
-        if (auth()->user()->role && auth()->user()->role->slug === 'supplier') {
-            // Depending on how supplier relationship is handled with User model.
-            // For now, let's filter by submitted_by
-            $query->where('submitted_by', auth()->id());
-        }
-        
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }

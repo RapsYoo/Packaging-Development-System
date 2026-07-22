@@ -42,7 +42,7 @@ export default function Index({ auth, pendingApprovals, myHistory }) {
                             {step.status}
                         </span>
                     </div>
-                    <span className="text-xs text-gray-500 font-medium">Urutan ke-{step.sequence}</span>
+                    <span className="text-xs text-gray-500 font-medium">Urutan ke-{step.step_order}</span>
                 </div>
                 
                 <h4 className="font-bold text-gray-900 text-lg mb-1">{project?.title || 'Proyek Tidak Diketahui'}</h4>

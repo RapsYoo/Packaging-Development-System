@@ -65,7 +65,8 @@ class Project extends Model
 
         $year = date('Y');
         $month = date('m');
-        $lastProject = self::where('code', 'like', "{$prefix}-{$year}{$month}-%")
+        $lastProject = self::withTrashed()
+            ->where('code', 'like', "{$prefix}-{$year}{$month}-%")
             ->orderBy('code', 'desc')
             ->first();
 

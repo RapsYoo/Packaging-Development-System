@@ -18,9 +18,9 @@ class RolesAndPermissionsSeeder extends Seeder
             ['name' => 'Marketing', 'slug' => 'marketing', 'description' => 'Tim Marketing untuk brief NPD/EPD'],
             ['name' => 'BOD', 'slug' => 'bod', 'description' => 'Board of Directors untuk approval konsep'],
             ['name' => 'R&D / Package Developer', 'slug' => 'rd', 'description' => 'Research & Development / Package Developer'],
-            ['name' => 'Supplier', 'slug' => 'supplier', 'description' => 'Vendor/Supplier bahan kemasan'],
             ['name' => 'SCM', 'slug' => 'scm', 'description' => 'Supply Chain Management'],
-            ['name' => 'QC / QA', 'slug' => 'qc', 'description' => 'Quality Control / Quality Assurance'],
+            ['name' => 'QC', 'slug' => 'qc', 'description' => 'Quality Control - Pelaksana inspeksi & uji kualitas'],
+            ['name' => 'QA', 'slug' => 'qa', 'description' => 'Quality Assurance - Pengawas sirkulasi approval & standar mutu'],
         ];
 
         foreach ($roles as $role) {
@@ -40,29 +40,34 @@ class RolesAndPermissionsSeeder extends Seeder
 
             // Project Management
             ['module' => 'Manajemen Proyek', 'feature' => 'Buat/Edit Brief NPD/EPD', 'slug' => 'project.brief'],
+            ['module' => 'Manajemen Proyek', 'feature' => 'Inisiasi Substitusi', 'slug' => 'project.substitution'],
             ['module' => 'Manajemen Proyek', 'feature' => 'Lihat Semua Project', 'slug' => 'project.view'],
             ['module' => 'Manajemen Proyek', 'feature' => 'Kelola Timeline', 'slug' => 'project.timeline'],
 
             // Approval
             ['module' => 'Approval', 'feature' => 'Evaluasi Konsep (BOD)', 'slug' => 'approval.concept'],
             ['module' => 'Approval', 'feature' => 'Approval Technical Drawing', 'slug' => 'approval.drawing'],
-            ['module' => 'Approval', 'feature' => 'Sirkulasi Artwork', 'slug' => 'approval.artwork'],
+            ['module' => 'Approval', 'feature' => 'Sirkulasi Artwork/CRB', 'slug' => 'approval.artwork'],
+            ['module' => 'Approval', 'feature' => 'Form Approval Bahan Kemas', 'slug' => 'approval.packaging'],
             ['module' => 'Approval', 'feature' => 'Lihat Riwayat Approval', 'slug' => 'approval.history'],
 
             // Packaging
             ['module' => 'Manajemen Kemasan', 'feature' => 'CRUD Master Kemasan', 'slug' => 'packaging.master'],
             ['module' => 'Manajemen Kemasan', 'feature' => 'Approval Color Range', 'slug' => 'packaging.color'],
 
-            // Supplier
-            ['module' => 'Manajemen Supplier', 'feature' => 'CRUD Master Supplier', 'slug' => 'supplier.master'],
-            ['module' => 'Manajemen Supplier', 'feature' => 'Pitching & Trial Sampel', 'slug' => 'supplier.trial'],
-            ['module' => 'Manajemen Supplier', 'feature' => 'Kelola Quotation', 'slug' => 'supplier.quotation'],
-            ['module' => 'Manajemen Supplier', 'feature' => 'Substitusi Bahan Kemas', 'slug' => 'supplier.substitution'],
+            // Sourcing & Supplier
+            ['module' => 'Sourcing & Supplier', 'feature' => 'CRUD Master Supplier', 'slug' => 'supplier.master'],
+            ['module' => 'Sourcing & Supplier', 'feature' => 'Pitching & Trial Sampel', 'slug' => 'supplier.trial'],
+            ['module' => 'Sourcing & Supplier', 'feature' => 'Kelola Quotation', 'slug' => 'supplier.quotation'],
 
-            // QC
+            // QC & Inspeksi
             ['module' => 'QC & Inspeksi', 'feature' => 'Inspeksi T0/T1/T2', 'slug' => 'qc.inspection'],
             ['module' => 'QC & Inspeksi', 'feature' => 'Transport Test', 'slug' => 'qc.transport'],
             ['module' => 'QC & Inspeksi', 'feature' => 'Lihat Riwayat Inspeksi', 'slug' => 'qc.history'],
+
+            // Scale Up & Standarisasi
+            ['module' => 'Scale Up', 'feature' => 'Kelola Scale Up', 'slug' => 'scaleup.manage'],
+            ['module' => 'Scale Up', 'feature' => 'Approve & Publish Scale Up', 'slug' => 'scaleup.approve'],
 
             // Notification & Audit
             ['module' => 'Notifikasi & Audit', 'feature' => 'Terima Notifikasi', 'slug' => 'notification.receive'],
@@ -79,11 +84,12 @@ class RolesAndPermissionsSeeder extends Seeder
             'admin' => [
                 'auth.login' => 'all', 'auth.password' => 'all',
                 'admin.dashboard' => 'all', 'admin.users' => 'all', 'admin.rbac' => 'all',
-                'project.brief' => 'all', 'project.view' => 'all', 'project.timeline' => 'all',
-                'approval.concept' => 'all', 'approval.drawing' => 'all', 'approval.artwork' => 'all', 'approval.history' => 'all',
+                'project.brief' => 'all', 'project.substitution' => 'all', 'project.view' => 'all', 'project.timeline' => 'all',
+                'approval.concept' => 'all', 'approval.drawing' => 'all', 'approval.artwork' => 'all', 'approval.packaging' => 'all', 'approval.history' => 'all',
                 'packaging.master' => 'all', 'packaging.color' => 'all',
-                'supplier.master' => 'all', 'supplier.trial' => 'all', 'supplier.quotation' => 'all', 'supplier.substitution' => 'all',
+                'supplier.master' => 'all', 'supplier.trial' => 'all', 'supplier.quotation' => 'all',
                 'qc.inspection' => 'all', 'qc.transport' => 'all', 'qc.history' => 'all',
+                'scaleup.manage' => 'all', 'scaleup.approve' => 'all',
                 'notification.receive' => 'all', 'notification.export' => 'all', 'audit.read' => 'all',
             ],
             'marketing' => [
@@ -102,35 +108,39 @@ class RolesAndPermissionsSeeder extends Seeder
             'rd' => [
                 'auth.login' => 'all', 'auth.password' => 'all',
                 'project.view' => 'all',
-                'approval.drawing' => 'all', 'approval.artwork' => 'all', 'approval.history' => 'all',
+                'approval.drawing' => 'all', 'approval.artwork' => 'all', 'approval.packaging' => 'all', 'approval.history' => 'all',
                 'packaging.master' => 'all', 'packaging.color' => 'all',
-                'supplier.trial' => 'all', 'supplier.substitution' => 'all',
+                'supplier.trial' => 'all',
                 'qc.history' => 'all',
-                'notification.receive' => 'all',
-            ],
-            'supplier' => [
-                'auth.login' => 'all', 'auth.password' => 'all',
-                'project.view' => 'all',
-                'approval.history' => 'read',
-                'supplier.trial' => 'all', 'supplier.quotation' => 'all',
+                'scaleup.manage' => 'all',
                 'notification.receive' => 'all',
             ],
             'scm' => [
                 'auth.login' => 'all', 'auth.password' => 'all',
-                'project.view' => 'all', 'project.timeline' => 'read',
-                'approval.drawing' => 'all', 'approval.history' => 'all',
-                'supplier.master' => 'all', 'supplier.quotation' => 'all', 'supplier.substitution' => 'all',
+                'project.substitution' => 'all', 'project.view' => 'all', 'project.timeline' => 'read',
+                'approval.packaging' => 'all', 'approval.history' => 'all',
+                'supplier.master' => 'all', 'supplier.quotation' => 'all', 'supplier.trial' => 'all',
                 'qc.history' => 'all',
+                'scaleup.manage' => 'read',
                 'notification.receive' => 'all', 'notification.export' => 'all',
             ],
             'qc' => [
                 'auth.login' => 'all', 'auth.password' => 'all',
-                'project.view' => 'all',
-                'approval.artwork' => 'all', 'approval.history' => 'all',
+                'project.substitution' => 'all', 'project.view' => 'all',
+                'approval.artwork' => 'all', 'approval.packaging' => 'all', 'approval.history' => 'all',
                 'packaging.color' => 'all',
-                'supplier.substitution' => 'all',
                 'qc.inspection' => 'all', 'qc.transport' => 'all', 'qc.history' => 'all',
+                'scaleup.manage' => 'all', 'scaleup.approve' => 'all',
                 'notification.receive' => 'all', 'notification.export' => 'all',
+            ],
+            'qa' => [
+                'auth.login' => 'all', 'auth.password' => 'all',
+                'project.view' => 'all',
+                'approval.artwork' => 'all', 'approval.packaging' => 'all', 'approval.history' => 'all',
+                'packaging.color' => 'all',
+                'qc.history' => 'read',
+                'scaleup.manage' => 'read',
+                'notification.receive' => 'all',
             ],
         ];
 
@@ -176,9 +186,9 @@ class RolesAndPermissionsSeeder extends Seeder
             ['name' => 'Marketing User', 'email' => 'marketing@priskila.co.id', 'role' => 'marketing', 'dept' => 'Marketing'],
             ['name' => 'Director', 'email' => 'bod@priskila.co.id', 'role' => 'bod', 'dept' => 'Board of Directors'],
             ['name' => 'R&D Developer', 'email' => 'rd@priskila.co.id', 'role' => 'rd', 'dept' => 'R&D'],
-            ['name' => 'Supplier Demo', 'email' => 'supplier@demo.com', 'role' => 'supplier', 'dept' => 'External'],
             ['name' => 'SCM Officer', 'email' => 'scm@priskila.co.id', 'role' => 'scm', 'dept' => 'Supply Chain'],
             ['name' => 'QC Inspector', 'email' => 'qc@priskila.co.id', 'role' => 'qc', 'dept' => 'Quality Control'],
+            ['name' => 'QA Supervisor', 'email' => 'qa@priskila.co.id', 'role' => 'qa', 'dept' => 'Quality Assurance'],
         ];
 
         foreach ($demoUsers as $demo) {

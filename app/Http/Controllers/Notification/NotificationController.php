@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Notification;
 use App\Http\Controllers\Controller;
 use App\Models\AppNotification;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class NotificationController extends Controller
 {
@@ -13,14 +14,15 @@ class NotificationController extends Controller
         $notifications = AppNotification::where('user_id', auth()->id())
             ->orderBy('created_at', 'desc')
             ->paginate(20);
-        return view('notifications.index', compact('notifications'));
+        return Inertia::render('Notifications/Index', compact('notifications'));
     }
 
     public function markAsRead(AppNotification $notification)
     {
         if ($notification->user_id !== auth()->id()) abort(403);
         $notification->markAsRead();
-        if ($notification->link) return redirect($notification->link);
+        
+        // Removed redirect as requested, just mark as read and stay on page
         return back();
     }
 

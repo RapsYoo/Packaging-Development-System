@@ -7,6 +7,7 @@ use App\Models\Project;
 use App\Models\ProjectPhase;
 use App\Models\User;
 use App\Services\AuditService;
+use App\Services\GatingService;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -31,25 +32,129 @@ class ProjectController extends Controller
         ]);
     }
 
-    public function create()
+    public function npdIndex(Request $request)
     {
-        // Get active users who can be PICs (exclude suppliers)
+        $query = Project::with(['creator', 'pic'])->where('type', 'NPD');
+        if ($request->filled('search')) {
+            $s = $request->search;
+            $query->where(fn($q) => $q->where('title', 'like', "%{$s}%")->orWhere('code', 'like', "%{$s}%"));
+        }
+        if ($request->filled('status')) $query->where('status', $request->status);
+        
+        $projects = $query->orderBy('created_at', 'desc')->paginate(15)->withQueryString();
+        
+        return Inertia::render('Projects/Npd/Index', [
+            'projects' => $projects,
+            'filters' => $request->only(['search', 'status'])
+        ]);
+    }
+
+    public function npdCreate(Request $request)
+    {
         $users = User::where('is_active', true)
-            ->whereHas('role', function($q) {
-                $q->where('slug', '!=', 'supplier');
-            })->get(['id', 'name', 'department', 'role_id'])
+            ->get(['id', 'name', 'department', 'role_id'])
+            ->load('role:id,name');
+            
+        return Inertia::render('Projects/Npd/Create', [
+            'users' => $users,
+        ]);
+    }
+
+    public function npdStore(Request $request)
+    {
+        return $this->storeProjectWithType($request, 'NPD');
+    }
+
+    public function epdIndex(Request $request)
+    {
+        $query = Project::with(['creator', 'pic'])->where('type', 'EPD');
+        if ($request->filled('search')) {
+            $s = $request->search;
+            $query->where(fn($q) => $q->where('title', 'like', "%{$s}%")->orWhere('code', 'like', "%{$s}%"));
+        }
+        if ($request->filled('status')) $query->where('status', $request->status);
+        
+        $projects = $query->orderBy('created_at', 'desc')->paginate(15)->withQueryString();
+        
+        return Inertia::render('Projects/Epd/Index', [
+            'projects' => $projects,
+            'filters' => $request->only(['search', 'status'])
+        ]);
+    }
+
+    public function epdCreate(Request $request)
+    {
+        $users = User::where('is_active', true)
+            ->get(['id', 'name', 'department', 'role_id'])
+            ->load('role:id,name');
+            
+        return Inertia::render('Projects/Epd/Create', [
+            'users' => $users,
+        ]);
+    }
+
+    public function epdStore(Request $request)
+    {
+        return $this->storeProjectWithType($request, 'EPD');
+    }
+
+    public function substitusiIndex(Request $request)
+    {
+        $query = Project::with(['creator', 'pic'])->where('type', 'Substitusi');
+        if ($request->filled('search')) {
+            $s = $request->search;
+            $query->where(fn($q) => $q->where('title', 'like', "%{$s}%")->orWhere('code', 'like', "%{$s}%"));
+        }
+        if ($request->filled('status')) $query->where('status', $request->status);
+        
+        $projects = $query->orderBy('created_at', 'desc')->paginate(15)->withQueryString();
+        
+        return Inertia::render('Projects/Substitusi/Index', [
+            'projects' => $projects,
+            'filters' => $request->only(['search', 'status'])
+        ]);
+    }
+
+    public function substitusiCreate(Request $request)
+    {
+        $users = User::where('is_active', true)
+            ->get(['id', 'name', 'department', 'role_id'])
+            ->load('role:id,name');
+            
+        return Inertia::render('Projects/Substitusi/Create', [
+            'users' => $users,
+        ]);
+    }
+
+    public function substitusiStore(Request $request)
+    {
+        return $this->storeProjectWithType($request, 'Substitusi');
+    }
+
+    public function create(Request $request)
+    {
+        $users = User::where('is_active', true)
+            ->get(['id', 'name', 'department', 'role_id'])
             ->load('role:id,name');
             
         return Inertia::render('Projects/Create', [
-            'users' => $users
+            'users' => $users,
+            'preselectedType' => $request->query('type', 'NPD'),
         ]);
     }
 
     public function store(Request $request)
     {
         $request->validate([
-            'title' => 'required|string|max:255',
             'type' => 'required|in:NPD,EPD,Substitusi',
+        ]);
+        return $this->storeProjectWithType($request, $request->type);
+    }
+
+    private function storeProjectWithType(Request $request, string $type)
+    {
+        $request->validate([
+            'title' => 'required|string|max:255',
             'concept' => 'nullable|string',
             'target_cogs' => 'nullable|numeric|min:0',
             'target_market' => 'nullable|string|max:255',
@@ -59,8 +164,8 @@ class ProjectController extends Controller
 
         $project = Project::create([
             'title' => $request->title,
-            'code' => Project::generateCode($request->type),
-            'type' => $request->type,
+            'code' => Project::generateCode($type),
+            'type' => $type,
             'concept' => $request->concept,
             'target_cogs' => $request->target_cogs,
             'target_market' => $request->target_market,
@@ -74,20 +179,20 @@ class ProjectController extends Controller
         // Create default phases (Bug fix: removed static order variable)
         $startDate = now();
         $phases = [
-            'Feasibility Study' => 'FS', 
-            'Development' => 'Dev', 
-            'Factory User Test' => 'FUT', 
-            'User Acceptance Test' => 'UAT', 
-            'Go Live' => 'GoLive'
+            'Evaluasi Konsep & Brief' => 'Concept', 
+            'Sourcing & Technical Drawing' => 'Drawing', 
+            'Inspeksi Kemasan & Dummy' => 'Inspection', 
+            'Artwork & Approval Akhir' => 'Artwork', 
+            'Scale Up & Mass Production' => 'ScaleUp'
         ];
         
         $order = 1;
-        foreach ($phases as $name => $type) {
+        foreach ($phases as $name => $phaseType) {
             $endDate = (clone $startDate)->addWeeks(2);
             ProjectPhase::create([
                 'project_id' => $project->id, 
                 'name' => $name, 
-                'phase_type' => $type, 
+                'phase_type' => $phaseType, 
                 'start_date' => $startDate, 
                 'end_date' => $endDate, 
                 'status' => 'pending', 
@@ -100,7 +205,26 @@ class ProjectController extends Controller
         AuditService::log('create', 'Project', $project->id, null, $project->toArray());
         
         if ($project->status === 'submitted') {
-            NotificationService::sendToRole('bod', 'Brief Baru', "Project {$project->code} - {$project->title} disubmit.", 'approval', route('projects.show', $project));
+            // Otomatis buat Approval Workflow (Evaluasi Konsep oleh BOD)
+            $workflow = \App\Models\ApprovalWorkflow::create([
+                'project_id' => $project->id,
+                'type' => 'concept',
+                'status' => 'pending',
+                'current_step' => 1,
+                'total_steps' => 1,
+                'initiated_by' => auth()->id(),
+            ]);
+
+            \App\Models\ApprovalStep::create([
+                'workflow_id' => $workflow->id,
+                'step_order' => 1,
+                'role_required' => 'bod',
+                'status' => 'pending',
+            ]);
+
+            NotificationService::sendToRole('bod', 'Evaluasi Konsep Baru',
+                "Project {$project->code} - {$project->title} membutuhkan evaluasi konsep Anda.",
+                'approval', route('approvals.show', $workflow));
         }
         
         return redirect()->route('projects.show', $project)->with('success', 'Project berhasil dibuat.');
@@ -117,16 +241,15 @@ class ProjectController extends Controller
         ]);
         
         return Inertia::render('Projects/Show', [
-            'project' => $project
+            'project' => $project,
+            'gatingSummary' => GatingService::getGatingSummary($project),
         ]);
     }
 
     public function edit(Project $project)
     {
         $users = User::where('is_active', true)
-            ->whereHas('role', function($q) {
-                $q->where('slug', '!=', 'supplier');
-            })->get(['id', 'name', 'department', 'role_id'])
+            ->get(['id', 'name', 'department', 'role_id'])
             ->load('role:id,name');
             
         return Inertia::render('Projects/Edit', [
@@ -155,8 +278,22 @@ class ProjectController extends Controller
     public function timeline(Project $project)
     {
         $project->load('phases');
+
+        // Add computed progress to each phase for the frontend based on DB status
+        $phases = $project->phases->map(function ($phase) {
+            $phaseArr = $phase->toArray();
+            $phaseArr['progress'] = match($phase->status) {
+                'completed' => 100,
+                'in_progress' => 50,
+                'overdue' => 75,
+                default => 0,
+            };
+            return $phaseArr;
+        });
+
         return Inertia::render('Projects/Timeline', [
-            'project' => $project
+            'project' => $project,
+            'phases' => $phases,
         ]);
     }
 

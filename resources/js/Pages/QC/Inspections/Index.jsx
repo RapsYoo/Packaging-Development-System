@@ -46,7 +46,7 @@ export default function Index({ auth, inspections }) {
                                             <div className="text-xs text-gray-500">{new Date(insp.created_at).toLocaleDateString('id-ID')}</div>
                                         </td>
                                         <td className="px-6 py-4 font-medium text-gray-800">
-                                            {insp.packaging_item?.name || '-'}
+                                            {insp.master_spec?.item_name_rm || '-'}
                                         </td>
                                         <td className="px-6 py-4 text-gray-600">
                                             {insp.supplier?.name || '-'}

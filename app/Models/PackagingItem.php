@@ -12,12 +12,17 @@ class PackagingItem extends Model
 
     protected $fillable = [
         'name', 'code', 'type', 'specification', 'dimensions',
-        'material', 'photo', 'status', 'created_by',
+        'material', 'photo', 'status', 'created_by', 'category_id',
     ];
 
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function category()
+    {
+        return $this->belongsTo(PackagingCategory::class, 'category_id');
     }
 
     public function standards()

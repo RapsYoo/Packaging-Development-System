@@ -2,7 +2,7 @@ import React from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
 
-export default function Show({ auth, project }) {
+export default function Show({ auth, project, gatingSummary }) {
     const getStatusBadge = (status) => {
         switch(status) {
             case 'draft': return <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-bold uppercase tracking-wider">Draft</span>;
@@ -119,6 +119,107 @@ export default function Show({ auth, project }) {
                                 </div>
                             </div>
                         </div>
+
+                        {/* Gating Checklist */}
+                        {gatingSummary && (
+                            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                                <h3 className="font-bold text-gray-800 mb-1">Prasyarat Tahapan</h3>
+                                <p className="text-xs text-gray-400 mb-4">Setiap tahap harus diselesaikan secara berurutan.</p>
+                                <div className="space-y-3">
+                                    {Object.entries(gatingSummary).map(([key, gate]) => {
+                                        let icon, color, statusText;
+                                        if (gate.completed) {
+                                            icon = <svg className="w-5 h-5 text-green-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>;
+                                            color = 'border-green-200 bg-green-50';
+                                            statusText = <span className="text-green-700 text-xs font-bold">Selesai</span>;
+                                        } else if (gate.blocked) {
+                                            icon = <svg className="w-5 h-5 text-gray-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>;
+                                            color = 'border-gray-200 bg-gray-50';
+                                            statusText = <span className="text-gray-400 text-xs font-medium">Terkunci</span>;
+                                        } else if (['pending', 'in_progress'].includes(gate.status)) {
+                                            icon = <svg className="w-5 h-5 text-amber-500 shrink-0 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>;
+                                            color = 'border-amber-200 bg-amber-50';
+                                            statusText = <span className="text-amber-700 text-xs font-bold">Sedang Berjalan</span>;
+                                        } else if (gate.status === 'rejected') {
+                                            icon = <svg className="w-5 h-5 text-red-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>;
+                                            color = 'border-red-200 bg-red-50';
+                                            statusText = <span className="text-red-700 text-xs font-bold">Ditolak</span>;
+                                        } else {
+                                            icon = <svg className="w-5 h-5 text-gray-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>;
+                                            color = 'border-gray-100';
+                                            statusText = <span className="text-gray-400 text-xs font-medium">Belum Dimulai</span>;
+                                        }
+                                        const userRole = auth.user.role?.slug;
+                                        
+                                        // Tentukan apakah user berhak menekan tombol "Mulai"
+                                        let canStart = false;
+                                        let startUrl = '';
+                                        let startLabel = '';
+                                        
+                                        if (gate.status === 'not_started' && !gate.blocked) {
+                                            if (key === 'drawing' && ['admin', 'rd'].includes(userRole)) {
+                                                canStart = true;
+                                                startUrl = route('approvals.drawing.create', project.id);
+                                                startLabel = 'Mulai Drawing';
+                                            } else if (key === 'artwork' && ['admin', 'marketing', 'rd', 'qc', 'qa'].includes(userRole)) {
+                                                canStart = true;
+                                                startUrl = route('approvals.artwork.create', project.id);
+                                                startLabel = 'Mulai Artwork';
+                                            } else if (key === 'concept' && ['admin', 'marketing'].includes(userRole)) {
+                                                canStart = true;
+                                                startUrl = route('approvals.concept.create', project.id);
+                                                startLabel = 'Mulai Konsep';
+                                            } else if (key === 'fabk' && ['admin', 'scm', 'rd'].includes(userRole)) {
+                                                canStart = true;
+                                                startUrl = project.type === 'Substitusi' 
+                                                    ? route('substitusi-approvals.create', { project_id: project.id })
+                                                    : route('packaging-approvals.create', { project_id: project.id });
+                                                startLabel = 'Buat FABK';
+                                            }
+                                        }
+
+                                        let workflowId = null;
+                                        if (project.approval_workflows) {
+                                            const wf = project.approval_workflows.find(w => w.type === key);
+                                            if (wf) workflowId = wf.id;
+                                        }
+
+                                        return (
+                                            <div key={key} className={`flex items-center justify-between p-3 rounded-xl border ${color} transition-all`}>
+                                                <div className="flex items-center gap-3">
+                                                    {icon}
+                                                    <span className={`text-sm font-medium ${gate.blocked ? 'text-gray-400' : 'text-gray-800'}`}>{gate.label}</span>
+                                                </div>
+                                                <div className="flex items-center gap-3">
+                                                    {statusText}
+                                                    {canStart && (
+                                                        <Link 
+                                                            href={startUrl} 
+                                                            method={key === 'fabk' ? 'get' : 'post'} 
+                                                            as={key === 'fabk' ? 'a' : 'button'} 
+                                                            className="ml-2 px-3 py-1 bg-indigo-600 text-white text-xs font-bold rounded-full shadow-sm hover:bg-indigo-700 hover:shadow transition-all"
+                                                        >
+                                                            {startLabel}
+                                                        </Link>
+                                                    )}
+                                                    {['in_progress', 'pending', 'approved', 'rejected'].includes(gate.status) && (workflowId || (key === 'fabk' && gate.document_id)) && (
+                                                        <Link 
+                                                            href={key === 'fabk' 
+                                                                ? (project.type === 'Substitusi' ? route('substitusi-approvals.show', gate.document_id) : route('packaging-approvals.show', gate.document_id))
+                                                                : route('approvals.show', workflowId)
+                                                            } 
+                                                            className="ml-2 px-3 py-1 bg-white border border-gray-200 text-gray-600 text-xs font-bold rounded-full shadow-sm hover:bg-gray-50 hover:text-indigo-600 transition-all"
+                                                        >
+                                                            Lihat Dokumen
+                                                        </Link>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
 
                         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                             <h3 className="font-bold text-gray-800 mb-4">Informasi Dokumen</h3>

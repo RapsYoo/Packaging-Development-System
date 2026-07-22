@@ -2,11 +2,11 @@ import { useState } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, useForm, router } from '@inertiajs/react';
 
-export default function Index({ auth, colors, packagingItems }) {
+export default function Index({ auth, colors, masterSpecs }) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     
     const { data, setData, post, processing, errors, reset } = useForm({
-        packaging_item_id: '',
+        master_spec_id: '',
         pantone_code: '',
         color_name: '',
         tolerance_de: '',
@@ -64,7 +64,7 @@ export default function Index({ auth, colors, packagingItems }) {
                                             {color.status}
                                         </span>
                                     </div>
-                                    <p className="text-xs text-gray-500 mb-4">{color.packaging_item?.name || 'Terkait semua'}</p>
+                                    <p className="text-xs text-gray-500 mb-4">{color.master_spec?.item_name_rm || 'Terkait semua'}</p>
                                     
                                     <div className="flex justify-between items-center text-xs border-t border-gray-100 pt-3">
                                         <span className="text-gray-500">Toleransi (ΔE)</span>
@@ -92,16 +92,16 @@ export default function Index({ auth, colors, packagingItems }) {
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Item Kemasan Terkait <span className="text-red-500">*</span></label>
                                         <select 
-                                            value={data.packaging_item_id} 
-                                            onChange={e => setData('packaging_item_id', e.target.value)}
+                                            value={data.master_spec_id} 
+                                            onChange={e => setData('master_spec_id', e.target.value)}
                                             className="w-full rounded-lg border-gray-200 focus:ring-indigo-500 text-sm"
                                         >
-                                            <option value="">-- Pilih Kemasan --</option>
-                                            {packagingItems.map(item => (
-                                                <option key={item.id} value={item.id}>{item.code} - {item.name}</option>
+                                            <option value="">-- Pilih Master Spec --</option>
+                                            {masterSpecs?.map(item => (
+                                                <option key={item.id} value={item.id}>[{item.item_code_rm}] {item.item_name_rm}</option>
                                             ))}
                                         </select>
-                                        {errors.packaging_item_id && <p className="mt-1 text-xs text-red-600">{errors.packaging_item_id}</p>}
+                                        {errors.master_spec_id && <p className="mt-1 text-xs text-red-600">{errors.master_spec_id}</p>}
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Nama Warna <span className="text-red-500">*</span></label>
