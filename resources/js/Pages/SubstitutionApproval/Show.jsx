@@ -107,6 +107,7 @@ export default function Show({ auth, approval }) {
     const [activeModal, setActiveModal] = useState(null); // 'packaging_dev', 'qc_supervisor', etc.
     const [decisionState, setDecisionState] = useState('accepted');
     const [notesState, setNotesState] = useState('');
+    const [useTextSignature, setUseTextSignature] = useState(false);
     const [signerName, setSignerName] = useState(auth.user.name);
 
     const { data, setData, post, processing } = useForm({
@@ -121,6 +122,7 @@ export default function Show({ auth, approval }) {
         setActiveModal(roleType);
         setDecisionState('accepted');
         setNotesState('');
+        setUseTextSignature(false);
     };
 
     const handleSaveSignature = (base64Data) => {
@@ -129,8 +131,8 @@ export default function Show({ auth, approval }) {
                 role_type: activeModal,
                 signature: base64Data,
                 name: signerName,
-                decision: ['qc_manager', 'scm_manager', 'qa_manager'].includes(activeModal) ? decisionState : null,
-                notes: ['qc_manager', 'scm_manager', 'qa_manager'].includes(activeModal) ? notesState : null
+                decision: decisionState,
+                notes: notesState
             },
             onSuccess: () => setActiveModal(null)
         });
@@ -168,6 +170,25 @@ export default function Show({ auth, approval }) {
     const canSignQcManager = isSubmittedOrReview && ['admin', 'qc'].includes(role) && !approval.ttd_qc_manager;
     const canSignScmManager = isSubmittedOrReview && ['admin', 'scm'].includes(role) && !approval.ttd_scm_manager;
     const canSignQaManager = isSubmittedOrReview && ['admin', 'qa'].includes(role) && !approval.ttd_qa_manager;
+
+    const renderSigBlock = (sigObj, altLabel) => {
+        if (!sigObj) return null;
+        const isText = !sigObj.signature || sigObj.signature === 'TERTANDA' || !sigObj.signature.startsWith('data:image/');
+        return (
+            <div className="flex flex-col items-center">
+                {isText ? (
+                    <span className="text-xs font-black tracking-widest uppercase text-indigo-700 bg-indigo-50 border border-indigo-200 px-3 py-1 rounded-md my-1 shadow-sm">
+                        [ TERTANDA ]
+                    </span>
+                ) : (
+                    <img src={sigObj.signature} className="h-12 object-contain" alt={altLabel} />
+                )}
+                <span className="text-[10px] text-gray-400 mt-0.5">
+                    {sigObj.signed_at ? new Date(sigObj.signed_at).toLocaleDateString('id-ID') : ''}
+                </span>
+            </div>
+        );
+    };
 
     return (
         <AuthenticatedLayout user={auth.user} header="Detail Form Substitusi Bahan Kemas">
@@ -248,13 +269,15 @@ export default function Show({ auth, approval }) {
                                 </tr>
                                 <tr className="border-b border-gray-800">
                                     <td className="px-4 py-3 font-bold bg-gray-50 border-r border-gray-800 text-sm">Supplier</td>
-                                    <td className="px-4 py-3 text-sm text-gray-700">{approval.supplier}</td>
+                                    <td className="px-4 py-3 text-sm">{approval.supplier_name}</td>
+                                </tr>
+                                <tr className="border-b border-gray-800">
+                                    <td className="px-4 py-3 font-bold bg-gray-50 border-r border-gray-800 text-sm">Spesifikasi Kemasan</td>
+                                    <td className="px-4 py-3 text-sm">{approval.spec_details || '-'}</td>
                                 </tr>
                                 <tr>
-                                    <td className="px-4 py-3 font-bold bg-gray-50 border-r border-gray-800 text-sm">Tanggal</td>
-                                    <td className="px-4 py-3 text-sm text-gray-600">
-                                        {approval.document_date ? new Date(approval.document_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-'}
-                                    </td>
+                                    <td className="px-4 py-3 font-bold bg-gray-50 border-r border-gray-800 text-sm">Alasan Substitusi</td>
+                                    <td className="px-4 py-3 text-sm text-gray-700 whitespace-pre-line">{approval.reason || '-'}</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -294,10 +317,7 @@ export default function Show({ auth, approval }) {
                             <span className="text-xs font-bold text-gray-600">Dibuat Oleh,</span>
                             <div className="my-2 h-14 flex items-center justify-center">
                                 {approval.ttd_packaging_dev ? (
-                                    <div className="flex flex-col items-center">
-                                        <img src={approval.ttd_packaging_dev.signature} className="h-12 object-contain" alt="Ttd Packaging Dev" />
-                                        <span className="text-[10px] text-gray-400 mt-1">{new Date(approval.ttd_packaging_dev.signed_at).toLocaleDateString('id-ID')}</span>
-                                    </div>
+                                    renderSigBlock(approval.ttd_packaging_dev, 'Ttd Packaging Dev')
                                 ) : (
                                     canSignPackagingDev ? (
                                         <button onClick={() => openSignModal('packaging_dev')} className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shadow transition-colors">
@@ -317,10 +337,7 @@ export default function Show({ auth, approval }) {
                             <span className="text-xs font-bold text-gray-600">Diperiksa Oleh,</span>
                             <div className="my-2 h-14 flex items-center justify-center">
                                 {approval.ttd_qc_supervisor ? (
-                                    <div className="flex flex-col items-center">
-                                        <img src={approval.ttd_qc_supervisor.signature} className="h-12 object-contain" alt="Ttd QC Supervisor" />
-                                        <span className="text-[10px] text-gray-400 mt-1">{new Date(approval.ttd_qc_supervisor.signed_at).toLocaleDateString('id-ID')}</span>
-                                    </div>
+                                    renderSigBlock(approval.ttd_qc_supervisor, 'Ttd QC Supervisor')
                                 ) : (
                                     canSignQcSupervisor ? (
                                         <button onClick={() => openSignModal('qc_supervisor')} className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shadow transition-colors">
@@ -344,10 +361,7 @@ export default function Show({ auth, approval }) {
                             <span className="text-xs font-bold text-gray-600">Disetujui Oleh,</span>
                             <div className="my-2 h-14 flex items-center justify-center">
                                 {approval.ttd_qc_manager ? (
-                                    <div className="flex flex-col items-center">
-                                        <img src={approval.ttd_qc_manager.signature} className="h-12 object-contain" alt="Ttd QC Manager" />
-                                        <span className="text-[10px] text-gray-400 mt-1">{new Date(approval.ttd_qc_manager.signed_at).toLocaleDateString('id-ID')}</span>
-                                    </div>
+                                    renderSigBlock(approval.ttd_qc_manager, 'Ttd QC Manager')
                                 ) : (
                                     canSignQcManager ? (
                                         <button onClick={() => openSignModal('qc_manager')} className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shadow transition-colors">
@@ -367,10 +381,7 @@ export default function Show({ auth, approval }) {
                             <span className="text-xs font-bold text-gray-600">Disetujui Oleh,</span>
                             <div className="my-2 h-14 flex items-center justify-center">
                                 {approval.ttd_scm_manager ? (
-                                    <div className="flex flex-col items-center">
-                                        <img src={approval.ttd_scm_manager.signature} className="h-12 object-contain" alt="Ttd SCM Manager" />
-                                        <span className="text-[10px] text-gray-400 mt-1">{new Date(approval.ttd_scm_manager.signed_at).toLocaleDateString('id-ID')}</span>
-                                    </div>
+                                    renderSigBlock(approval.ttd_scm_manager, 'Ttd SCM Manager')
                                 ) : (
                                     canSignScmManager ? (
                                         <button onClick={() => openSignModal('scm_manager')} className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shadow transition-colors">
@@ -390,10 +401,7 @@ export default function Show({ auth, approval }) {
                             <span className="text-xs font-bold text-gray-600">Disetujui Oleh,</span>
                             <div className="my-2 h-14 flex items-center justify-center">
                                 {approval.ttd_qa_manager ? (
-                                    <div className="flex flex-col items-center">
-                                        <img src={approval.ttd_qa_manager.signature} className="h-12 object-contain" alt="Ttd QA Manager" />
-                                        <span className="text-[10px] text-gray-400 mt-1">{new Date(approval.ttd_qa_manager.signed_at).toLocaleDateString('id-ID')}</span>
-                                    </div>
+                                    renderSigBlock(approval.ttd_qa_manager, 'Ttd QA Manager')
                                 ) : (
                                     canSignQaManager ? (
                                         <button onClick={() => openSignModal('qa_manager')} className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shadow transition-colors">
@@ -512,35 +520,64 @@ export default function Show({ auth, approval }) {
                                 <input type="text" value={signerName} onChange={e => setSignerName(e.target.value)} className="w-full rounded-lg text-sm border-gray-200 focus:ring-indigo-500" />
                             </div>
 
-                            {['qc_manager', 'scm_manager', 'qa_manager'].includes(activeModal) && (
-                                <div className="space-y-4 p-4 bg-gray-50 rounded-xl border border-gray-100">
-                                    <div>
-                                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Keputusan Persetujuan Sampel</label>
-                                        <div className="flex gap-4 mt-1">
-                                            <label className="inline-flex items-center text-sm font-semibold">
-                                                <input type="radio" value="accepted" checked={decisionState === 'accepted'} onChange={() => setDecisionState('accepted')} className="text-indigo-600 mr-2" />
-                                                Setujui (Diterima)
-                                            </label>
-                                            <label className="inline-flex items-center text-sm font-semibold">
-                                                <input type="radio" value="rejected" checked={decisionState === 'rejected'} onChange={() => setDecisionState('rejected')} className="text-red-600 mr-2" />
-                                                Tolak (Tidak Diterima)
-                                            </label>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Catatan Approval {decisionState === 'rejected' && <span className="text-red-500">*</span>}</label>
-                                        <textarea value={notesState} onChange={e => setNotesState(e.target.value)} rows="2" className="w-full rounded-lg text-xs border-gray-200" placeholder="Ketik catatan di sini..." />
+                            {/* Keputusan & Catatan */}
+                            <div className="space-y-3 p-4 bg-gray-50 rounded-xl border border-gray-100">
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Keputusan Persetujuan</label>
+                                    <div className="flex gap-4">
+                                        <label className="inline-flex items-center text-sm font-semibold cursor-pointer">
+                                            <input type="radio" value="accepted" checked={decisionState === 'accepted'} onChange={() => setDecisionState('accepted')} className="text-indigo-600 mr-2" />
+                                            Setujui (Diterima)
+                                        </label>
+                                        <label className="inline-flex items-center text-sm font-semibold cursor-pointer text-red-600">
+                                            <input type="radio" value="rejected" checked={decisionState === 'rejected'} onChange={() => setDecisionState('rejected')} className="text-red-600 mr-2" />
+                                            Tolak (Tidak Diterima)
+                                        </label>
                                     </div>
                                 </div>
-                            )}
-
-                            <div>
-                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Gambarkan Tanda Tangan Anda</label>
-                                <CanvasSignaturePad
-                                    onCancel={() => setActiveModal(null)}
-                                    onSave={handleSaveSignature}
-                                />
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Catatan Approval {decisionState === 'rejected' && <span className="text-red-500">*</span>}</label>
+                                    <textarea value={notesState} onChange={e => setNotesState(e.target.value)} rows="2" className="w-full rounded-lg text-xs border-gray-200 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Ketik catatan tambahan di sini..." />
+                                </div>
                             </div>
+
+                            {/* Opsi Checkbox Tertanda */}
+                            <div className="flex items-center gap-2 p-3 bg-indigo-50/60 rounded-xl border border-indigo-100">
+                                <input
+                                    type="checkbox"
+                                    id="useTextSignature"
+                                    checked={useTextSignature}
+                                    onChange={e => setUseTextSignature(e.target.checked)}
+                                    className="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4 cursor-pointer"
+                                />
+                                <label htmlFor="useTextSignature" className="text-xs font-bold text-indigo-900 cursor-pointer select-none">
+                                    Gunakan "Tertanda" (ACC tanpa gambar paraf)
+                                </label>
+                            </div>
+
+                            {useTextSignature ? (
+                                <div className="pt-2 flex justify-end gap-3">
+                                    <button type="button" onClick={() => setActiveModal(null)} className="px-4 py-2 text-xs font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all">
+                                        Batal
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleSaveSignature('TERTANDA')}
+                                        disabled={decisionState === 'rejected' && !notesState.trim()}
+                                        className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-lg text-xs font-bold shadow-md transition-all"
+                                    >
+                                        Simpan Tanda Tangan (Tertanda)
+                                    </button>
+                                </div>
+                            ) : (
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Gambarkan Tanda Tangan Anda</label>
+                                    <CanvasSignaturePad
+                                        onCancel={() => setActiveModal(null)}
+                                        onSave={handleSaveSignature}
+                                    />
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
