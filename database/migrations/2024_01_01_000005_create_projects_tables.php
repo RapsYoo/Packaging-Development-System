@@ -30,7 +30,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('project_id')->constrained()->onDelete('cascade');
             $table->string('name');
-            $table->enum('phase_type', ['FS', 'Dev', 'FUT', 'UAT', 'GoLive'])->nullable();
+            $table->string('phase_type', 50)->nullable();
             $table->date('start_date');
             $table->date('end_date');
             $table->enum('status', ['pending', 'in_progress', 'completed', 'overdue'])->default('pending');
