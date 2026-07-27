@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, router } from '@inertiajs/react';
 
 // Signature Canvas Pad for Modal
 function CanvasSignaturePad({ onSave, onCancel }) {
@@ -126,20 +126,19 @@ export default function Show({ auth, approval }) {
     };
 
     const handleSaveSignature = (base64Data) => {
-        post(route('substitusi-approvals.decide', approval.id), {
-            data: {
-                role_type: activeModal,
-                signature: base64Data,
-                name: signerName,
-                decision: decisionState,
-                notes: notesState
-            },
+        router.post(route('substitusi-approvals.decide', approval.id), {
+            role_type: activeModal,
+            signature: base64Data,
+            name: signerName,
+            decision: decisionState,
+            notes: notesState
+        }, {
             onSuccess: () => setActiveModal(null)
         });
     };
 
     const triggerSubmit = () => {
-        post(route('substitusi-approvals.submit', approval.id));
+        router.post(route('substitusi-approvals.submit', approval.id));
     };
 
     const getStatusBadge = (status) => {
