@@ -158,12 +158,12 @@ export default function Show({ auth, approval }) {
     // Check who can sign which box
     const canSignPackagingDevLaporan = approval.status === 'draft' && ['admin', 'rd'].includes(role) && !approval.ttd_packaging_dev_laporan;
     const canSignQcManagerLaporan = approval.status === 'draft' && ['admin', 'qc'].includes(role) && !approval.ttd_qc_manager_laporan;
-    
+
     // Step 3
     const isSubmittedOrReview = ['submitted', 'in_review'].includes(approval.status);
     const canSignPackagingDev = isSubmittedOrReview && ['admin', 'rd'].includes(role) && !approval.ttd_packaging_dev;
     const canSignQcSupervisor = isSubmittedOrReview && ['admin', 'qc'].includes(role) && !approval.ttd_qc_supervisor;
-    
+
     // Disetujui Oleh (Approvers)
     const canSignQcManager = isSubmittedOrReview && ['admin', 'qc'].includes(role) && !approval.ttd_qc_manager;
     const canSignScmManager = isSubmittedOrReview && ['admin', 'scm'].includes(role) && !approval.ttd_scm_manager;
@@ -174,7 +174,7 @@ export default function Show({ auth, approval }) {
             <Head title={`Form Approval Substitusi - ${approval.document_no}`} />
 
             <div className="max-w-5xl mx-auto space-y-6 mb-16">
-                
+
                 {/* Status Bar */}
                 <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-4">
                     <div className="flex items-center gap-4">
@@ -209,7 +209,7 @@ export default function Show({ auth, approval }) {
 
                 {/* Main Premium Document Layout (matches image) */}
                 <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 sm:p-12 max-w-4xl mx-auto text-black relative">
-                    
+
                     {/* Header Company and logo */}
                     <div className="flex items-center mb-6">
                         <img src="/logo.png" className="h-10 object-contain mr-4" alt="Logo Priskila" />
@@ -417,7 +417,7 @@ export default function Show({ auth, approval }) {
                 {/* Additional Trial and SCM Info Details (Collapse/Display) */}
                 <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 space-y-6">
                     <h3 className="font-bold text-gray-800 text-sm pb-2 border-b border-gray-100">Detail Laporan Analisa Trial (Step 2)</h3>
-                    
+
                     <div className="overflow-x-auto border border-gray-100 rounded-xl">
                         <table className="w-full text-left border-collapse text-sm">
                             <thead className="bg-gray-50 text-xs font-bold uppercase text-gray-500">
@@ -442,10 +442,10 @@ export default function Show({ auth, approval }) {
                                         </td>
                                     </tr>
                                 )) || (
-                                    <tr>
-                                        <td colSpan="5" className="px-4 py-6 text-center text-gray-400 italic">Tidak ada data trial analisa</td>
-                                    </tr>
-                                )}
+                                        <tr>
+                                            <td colSpan="5" className="px-4 py-6 text-center text-gray-400 italic">Tidak ada data trial analisa</td>
+                                        </tr>
+                                    )}
                             </tbody>
                         </table>
                     </div>
@@ -487,7 +487,7 @@ export default function Show({ auth, approval }) {
                             </div>
                         </div>
                     )}
-                    
+
                     <div className="flex gap-10 text-sm bg-gray-50 p-4 border border-gray-100 rounded-xl">
                         <div><span className="text-gray-500">Rekomendasi:</span> <span className={`font-bold ${approval.rekomendasi === 'MS' ? 'text-green-700' : 'text-red-700'}`}>{approval.rekomendasi === 'MS' ? 'Memenuhi Syarat (MS)' : 'Tidak Memenuhi Syarat (TMS)'}</span></div>
                         {approval.catatan_rekomendasi && <div><span className="text-gray-500">Catatan Rekomendasi:</span> <span className="font-semibold text-gray-800">{approval.catatan_rekomendasi}</span></div>}
@@ -505,7 +505,7 @@ export default function Show({ auth, approval }) {
                                 ✕
                             </button>
                         </div>
-                        
+
                         <div className="space-y-4">
                             <div>
                                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Nama Lengkap Penandatangan <span className="text-red-500">*</span></label>
@@ -536,7 +536,7 @@ export default function Show({ auth, approval }) {
 
                             <div>
                                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Gambarkan Tanda Tangan Anda</label>
-                                <CanvasSignaturePad 
+                                <CanvasSignaturePad
                                     onCancel={() => setActiveModal(null)}
                                     onSave={handleSaveSignature}
                                 />

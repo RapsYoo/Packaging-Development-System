@@ -5,21 +5,20 @@ namespace App\Services;
 use App\Models\ApprovalWorkflow;
 use App\Models\PackagingApproval;
 use App\Models\Project;
+use App\Models\ScaleUp;
+use App\Models\SubstitutionApproval;
 
 /**
  * Hard Gating Rules Service
  * 
  * Aturan sesuai alur aktual:
  * NPD/EPD: Concept -> Technical Drawing -> FABK -> [Artwork (sekunder)] -> Scale Up
- * Substitusi: FABK -> [Artwork (sekunder)] -> Scale Up (Bypass Concept & Drawing)
+ * Substitusi: FABK -> [Artwork (sekunder/tersier)] -> Scale Up / Pembuatan Standar
  */
 class GatingService
 {
     /**
      * Cek apakah Technical Drawing Approval bisa dimulai.
-     * Prasyarat:
-     * - NPD/EPD: Concept Approval harus APPROVED.
-     * - Substitusi: Tidak wajib.
      */
     public static function canStartDrawingApproval(Project $project): array
     {
@@ -54,9 +53,6 @@ class GatingService
 
     /**
      * Cek apakah Form Approval Bahan Kemas (FABK) bisa dibuat.
-     * Prasyarat:
-     * - NPD/EPD: Technical Drawing harus APPROVED.
-     * - Substitusi: Langsung bisa dibuat (setelah cek quotation/sampel).
      */
     public static function canCreateFABK(Project $project): array
     {
@@ -79,15 +75,18 @@ class GatingService
 
     /**
      * Cek apakah Sirkulasi Artwork bisa dimulai untuk project ini.
-     * Prasyarat: FABK harus sudah FULLY APPROVED (untuk semua tipe proyek).
      */
     public static function canStartArtworkApproval(Project $project): array
     {
-        // Cari FABK yang sudah fully approved untuk project ini
         if ($project->type === 'Substitusi') {
-            $fabkApproved = \App\Models\SubstitutionApproval::where('project_id', $project->id)
-                ->where('status', 'approved')
-                ->exists();
+            $fabk = SubstitutionApproval::where('project_id', $project->id)->latest()->first();
+            if ($fabk && $fabk->packaging_type === 'Primer') {
+                return [
+                    'allowed' => false,
+                    'reason' => 'Proyek Substitusi Kemasan Primer tidak memerlukan Sirkulasi Artwork/CRB.'
+                ];
+            }
+            $fabkApproved = $fabk && $fabk->status === 'approved';
         } else {
             $fabkApproved = PackagingApproval::where('project_id', $project->id)
                 ->whereNotNull('approved_by_brand')
@@ -121,17 +120,36 @@ class GatingService
     }
 
     /**
-     * Cek apakah Scale Up bisa dibuat untuk project ini.
-     * Prasyarat:
-     * - FABK harus sudah FULLY APPROVED.
-     * - Jika ada Artwork Workflow yang dibuat (untuk sekunder/tersier), harus APPROVED.
+     * Cek apakah Scale Up / Pembuatan Standar bisa dibuat untuk project ini.
      */
     public static function canCreateScaleUp(Project $project): array
     {
         if ($project->type === 'Substitusi') {
-            $fabkApproved = \App\Models\SubstitutionApproval::where('project_id', $project->id)
-                ->where('status', 'approved')
-                ->exists();
+            $fabk = SubstitutionApproval::where('project_id', $project->id)->latest()->first();
+            if (!$fabk || $fabk->status !== 'approved') {
+                return [
+                    'allowed' => false,
+                    'reason' => 'Form Approval Bahan Kemas (FABK) belum disetujui sepenuhnya.'
+                ];
+            }
+
+            if ($fabk->packaging_type === 'Primer') {
+                return ['allowed' => true, 'reason' => null];
+            }
+
+            $artworkWorkflow = ApprovalWorkflow::where('project_id', $project->id)
+                ->where('type', 'artwork')
+                ->latest()
+                ->first();
+
+            if ($artworkWorkflow && $artworkWorkflow->status !== 'approved') {
+                return [
+                    'allowed' => false,
+                    'reason' => 'Sirkulasi Artwork/CRB (Khusus Sekunder/Tersier) belum selesai/disetujui.'
+                ];
+            }
+
+            return ['allowed' => true, 'reason' => null];
         } else {
             $fabkApproved = PackagingApproval::where('project_id', $project->id)
                 ->whereNotNull('approved_by_brand')
@@ -149,8 +167,6 @@ class GatingService
             ];
         }
 
-        // Cek apakah ada sirkulasi artwork yang sedang berjalan atau ditolak
-        // Jika ada workflow artwork, pastikan statusnya approved
         $artworkWorkflow = ApprovalWorkflow::where('project_id', $project->id)
             ->where('type', 'artwork')
             ->latest()
@@ -168,7 +184,6 @@ class GatingService
 
     /**
      * Mendapatkan ringkasan status gating untuk sebuah project.
-     * Berguna untuk ditampilkan di UI sebagai checklist.
      */
     public static function getGatingSummary(Project $project): array
     {
@@ -182,10 +197,13 @@ class GatingService
             ->latest()
             ->first();
 
-        // Cari FABK terbaru yang terkait project ini
-        if ($project->type === 'Substitusi') {
-            $fabk = \App\Models\SubstitutionApproval::where('project_id', $project->id)->latest()->first();
+        $isSubstitusi = $project->type === 'Substitusi';
+        $isSubstitusiPrimer = false;
+
+        if ($isSubstitusi) {
+            $fabk = SubstitutionApproval::where('project_id', $project->id)->latest()->first();
             $fabkApproved = $fabk && $fabk->status === 'approved';
+            $isSubstitusiPrimer = $fabk && $fabk->packaging_type === 'Primer';
         } else {
             $fabk = PackagingApproval::where('project_id', $project->id)->latest()->first();
             $fabkApproved = $fabk && $fabk->isFullyApproved();
@@ -223,24 +241,48 @@ class GatingService
             'document_id' => $fabk?->id ?? null,
         ];
 
-        $summary['artwork'] = [
-            'label' => 'Sirkulasi Artwork/CRB (Khusus Sekunder/Tersier)',
-            'status' => $artworkWorkflow?->status ?? 'not_started',
-            'completed' => $artworkWorkflow?->status === 'approved',
-            'blocked' => !$fabkApproved,
-        ];
+        if ($isSubstitusiPrimer) {
+            $summary['artwork'] = [
+                'label' => 'Sirkulasi Artwork/CRB (Tidak Diperlukan untuk Kemasan Primer)',
+                'status' => 'not_applicable',
+                'completed' => true,
+                'blocked' => false,
+                'not_applicable' => true,
+            ];
+        } else {
+            $summary['artwork'] = [
+                'label' => 'Sirkulasi Artwork/CRB (Khusus Sekunder/Tersier)',
+                'status' => $artworkWorkflow?->status ?? 'not_started',
+                'completed' => $artworkWorkflow?->status === 'approved',
+                'blocked' => !$fabkApproved,
+            ];
+        }
+
+        $scaleUpBlocked = !$fabkApproved;
+        if (!$isSubstitusiPrimer) {
+            $scaleUpBlocked = $scaleUpBlocked || ($artworkWorkflow && $artworkWorkflow->status !== 'approved');
+        }
+
+        $scaleUp = ScaleUp::where('project_id', $project->id)->latest()->first();
+        $scaleUpStatus = $scaleUp ? ($scaleUp->status === 'completed' ? 'approved' : $scaleUp->status) : 'not_started';
+        $scaleUpCompleted = $scaleUp && in_array($scaleUp->status, ['completed', 'approved']);
 
         $summary['scale_up'] = [
-            'label' => 'Scale Up',
-            'status' => 'check_separately',
-            'completed' => false,
-            'blocked' => !$fabkApproved || ($artworkWorkflow && $artworkWorkflow->status !== 'approved'),
+            'label' => $isSubstitusi ? 'Pembuatan Standar (Color Standard & Master Data)' : 'Scale Up & Mass Production',
+            'status' => $scaleUpStatus,
+            'completed' => $scaleUpCompleted,
+            'blocked' => $scaleUpBlocked,
+            'document_id' => $scaleUp?->id ?? null,
         ];
 
         // Calculate automatic progress based on completed gates
-        $totalGates = count($summary);
+        $totalGates = 0;
         $completedGates = 0;
         foreach ($summary as $gate) {
+            if (!empty($gate['not_applicable'])) {
+                continue;
+            }
+            $totalGates++;
             if ($gate['completed']) {
                 $completedGates++;
             }

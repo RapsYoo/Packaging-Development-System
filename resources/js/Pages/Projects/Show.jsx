@@ -4,7 +4,7 @@ import { Head, Link, router } from '@inertiajs/react';
 
 export default function Show({ auth, project, gatingSummary }) {
     const getStatusBadge = (status) => {
-        switch(status) {
+        switch (status) {
             case 'draft': return <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-bold uppercase tracking-wider">Draft</span>;
             case 'submitted': return <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold uppercase tracking-wider">Submitted</span>;
             case 'active': return <span className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs font-bold uppercase tracking-wider">Aktif</span>;
@@ -14,7 +14,7 @@ export default function Show({ auth, project, gatingSummary }) {
     };
 
     const handleDelete = () => {
-        if(confirm('Peringatan: Menghapus proyek ini akan menghapus semua riwayat fase dan approval terkait. Lanjutkan?')) {
+        if (confirm('Peringatan: Menghapus proyek ini akan menghapus semua riwayat fase dan approval terkait. Lanjutkan?')) {
             router.delete(route('projects.destroy', project.id));
         }
     };
@@ -29,16 +29,16 @@ export default function Show({ auth, project, gatingSummary }) {
                     <Link href={route('projects.index')} className="text-sm font-medium text-gray-500 hover:text-indigo-600 transition-colors">
                         &larr; Kembali ke Daftar Proyek
                     </Link>
-                    
+
                     <div className="flex flex-wrap gap-2">
-                        <Link 
-                            href={route('projects.timeline', project.id)} 
+                        <Link
+                            href={route('projects.timeline', project.id)}
                             className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg text-sm font-bold shadow-md hover:shadow-lg transition-all"
                         >
                             <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
                             Lihat Timeline (Gantt)
                         </Link>
-                        
+
                         {(auth.user.role.slug === 'admin' || auth.user.role.slug === 'marketing') && (
                             <>
                                 <Link href={route('projects.edit', project.id)} className="px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">
@@ -101,13 +101,13 @@ export default function Show({ auth, project, gatingSummary }) {
                             <div className="w-full bg-indigo-900/50 rounded-full h-2.5 mb-6">
                                 <div className="bg-white h-2.5 rounded-full" style={{ width: `${project.progress || 0}%` }}></div>
                             </div>
-                            
+
                             <div className="space-y-4 pt-4 border-t border-indigo-500/30">
                                 <div>
                                     <p className="text-xs text-indigo-200 mb-1">Deadline Proyek</p>
                                     <div className="flex items-center font-semibold">
                                         <svg className="w-4 h-4 mr-2 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                                        {project.deadline ? new Date(project.deadline).toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}) : '-'}
+                                        {project.deadline ? new Date(project.deadline).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-'}
                                     </div>
                                 </div>
                                 <div>
@@ -127,8 +127,13 @@ export default function Show({ auth, project, gatingSummary }) {
                                 <p className="text-xs text-gray-400 mb-4">Setiap tahap harus diselesaikan secara berurutan.</p>
                                 <div className="space-y-3">
                                     {Object.entries(gatingSummary).map(([key, gate]) => {
+                                        if (key === 'overall_progress') return null;
                                         let icon, color, statusText;
-                                        if (gate.completed) {
+                                        if (gate.not_applicable || gate.status === 'not_applicable') {
+                                            icon = <svg className="w-5 h-5 text-blue-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>;
+                                            color = 'border-blue-100 bg-blue-50/50';
+                                            statusText = <span className="text-blue-600 text-xs font-semibold">Tidak Diperlukan</span>;
+                                        } else if (gate.completed) {
                                             icon = <svg className="w-5 h-5 text-green-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>;
                                             color = 'border-green-200 bg-green-50';
                                             statusText = <span className="text-green-700 text-xs font-bold">Selesai</span>;
@@ -150,12 +155,12 @@ export default function Show({ auth, project, gatingSummary }) {
                                             statusText = <span className="text-gray-400 text-xs font-medium">Belum Dimulai</span>;
                                         }
                                         const userRole = auth.user.role?.slug;
-                                        
+
                                         // Tentukan apakah user berhak menekan tombol "Mulai"
                                         let canStart = false;
                                         let startUrl = '';
                                         let startLabel = '';
-                                        
+
                                         if (gate.status === 'not_started' && !gate.blocked) {
                                             if (key === 'drawing' && ['admin', 'rd'].includes(userRole)) {
                                                 canStart = true;
@@ -171,10 +176,14 @@ export default function Show({ auth, project, gatingSummary }) {
                                                 startLabel = 'Mulai Konsep';
                                             } else if (key === 'fabk' && ['admin', 'scm', 'rd'].includes(userRole)) {
                                                 canStart = true;
-                                                startUrl = project.type === 'Substitusi' 
+                                                startUrl = project.type === 'Substitusi'
                                                     ? route('substitusi-approvals.create', { project_id: project.id })
                                                     : route('packaging-approvals.create', { project_id: project.id });
                                                 startLabel = 'Buat FABK';
+                                            } else if (key === 'scale_up' && ['admin', 'qc', 'rd', 'scm'].includes(userRole)) {
+                                                canStart = true;
+                                                startUrl = route('scaleups.create', { project_id: project.id });
+                                                startLabel = project.type === 'Substitusi' ? 'Buat Standar' : 'Mulai Scale Up';
                                             }
                                         }
 
@@ -193,21 +202,21 @@ export default function Show({ auth, project, gatingSummary }) {
                                                 <div className="flex items-center gap-3">
                                                     {statusText}
                                                     {canStart && (
-                                                        <Link 
-                                                            href={startUrl} 
-                                                            method={key === 'fabk' ? 'get' : 'post'} 
-                                                            as={key === 'fabk' ? 'a' : 'button'} 
+                                                        <Link
+                                                            href={startUrl}
+                                                            method={['fabk', 'scale_up'].includes(key) ? 'get' : 'post'}
+                                                            as={['fabk', 'scale_up'].includes(key) ? 'a' : 'button'}
                                                             className="ml-2 px-3 py-1 bg-indigo-600 text-white text-xs font-bold rounded-full shadow-sm hover:bg-indigo-700 hover:shadow transition-all"
                                                         >
                                                             {startLabel}
                                                         </Link>
                                                     )}
-                                                    {['in_progress', 'pending', 'approved', 'rejected'].includes(gate.status) && (workflowId || (key === 'fabk' && gate.document_id)) && (
-                                                        <Link 
-                                                            href={key === 'fabk' 
+                                                    {['in_progress', 'pending', 'approved', 'completed', 'rejected'].includes(gate.status) && (workflowId || ((key === 'fabk' || key === 'scale_up') && gate.document_id)) && (
+                                                        <Link
+                                                            href={key === 'fabk'
                                                                 ? (project.type === 'Substitusi' ? route('substitusi-approvals.show', gate.document_id) : route('packaging-approvals.show', gate.document_id))
-                                                                : route('approvals.show', workflowId)
-                                                            } 
+                                                                : (key === 'scale_up' ? route('scaleups.show', gate.document_id) : route('approvals.show', workflowId))
+                                                            }
                                                             className="ml-2 px-3 py-1 bg-white border border-gray-200 text-gray-600 text-xs font-bold rounded-full shadow-sm hover:bg-gray-50 hover:text-indigo-600 transition-all"
                                                         >
                                                             Lihat Dokumen
