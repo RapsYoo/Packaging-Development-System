@@ -8,6 +8,7 @@ use App\Models\ApprovalWorkflow;
 use App\Models\Inspection;
 use App\Models\AppNotification;
 use App\Models\Quotation;
+use App\Models\SubstitutionApproval;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -44,6 +45,7 @@ class DashboardController extends Controller
                     ->get()
                     ->groupBy(fn($u) => $u->role ? $u->role->name : 'No Role')
                     ->map->count();
+                $data['pendingSubstitutions'] = SubstitutionApproval::whereIn('status', ['submitted', 'in_review'])->count();
                 break;
 
             case 'marketing':
@@ -82,6 +84,11 @@ class DashboardController extends Controller
                 $data['pendingArtworkReviews'] = ApprovalWorkflow::whereHas('steps', function ($q) {
                     $q->where('role_required', 'qc')->where('status', 'pending');
                 })->count();
+                $data['pendingSubstitutions'] = SubstitutionApproval::whereIn('status', ['submitted', 'in_review'])
+                    ->where(function ($q) {
+                        $q->whereNull('ttd_qc_supervisor')
+                          ->orWhereNull('ttd_qc_manager');
+                    })->count();
                 break;
 
             case 'scm':
@@ -90,6 +97,10 @@ class DashboardController extends Controller
                 $data['pendingDrawings'] = ApprovalWorkflow::whereHas('steps', function ($q) {
                     $q->where('role_required', 'scm')->where('status', 'pending');
                 })->count();
+                $data['pendingSubstitutions'] = SubstitutionApproval::whereIn('status', ['submitted', 'in_review'])
+                    ->whereNull('ttd_scm_manager')
+                    ->whereNotNull('ttd_qc_manager')
+                    ->count();
                 break;
 
             case 'qa':
@@ -99,6 +110,10 @@ class DashboardController extends Controller
                 })->count();
                 $data['pendingPackagingApprovals'] = \App\Models\PackagingApproval::where('status', 'submitted')
                     ->where('decision_qa', 'pending')
+                    ->count();
+                $data['pendingSubstitutions'] = SubstitutionApproval::whereIn('status', ['submitted', 'in_review'])
+                    ->whereNull('ttd_qa_manager')
+                    ->whereNotNull('ttd_scm_manager')
                     ->count();
                 break;
 

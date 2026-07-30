@@ -7,7 +7,7 @@ function SignaturePad({ onSave, onClear, defaultValue }) {
     const canvasRef = useRef(null);
     const [isSigned, setIsSigned] = useState(!!defaultValue);
     const [sigImage, setSigImage] = useState(defaultValue || null);
-    let drawing = false;
+    const drawingRef = useRef(false);
 
     useEffect(() => {
         if (defaultValue) return;
@@ -30,7 +30,7 @@ function SignaturePad({ onSave, onClear, defaultValue }) {
         };
 
         const startDrawing = (e) => {
-            drawing = true;
+            drawingRef.current = true;
             const pos = getMousePos(e);
             ctx.beginPath();
             ctx.moveTo(pos.x, pos.y);
@@ -38,7 +38,7 @@ function SignaturePad({ onSave, onClear, defaultValue }) {
         };
 
         const draw = (e) => {
-            if (!drawing) return;
+            if (!drawingRef.current) return;
             const pos = getMousePos(e);
             ctx.lineTo(pos.x, pos.y);
             ctx.stroke();
@@ -46,8 +46,8 @@ function SignaturePad({ onSave, onClear, defaultValue }) {
         };
 
         const stopDrawing = () => {
-            if (drawing) {
-                drawing = false;
+            if (drawingRef.current) {
+                drawingRef.current = false;
                 const dataUrl = canvas.toDataURL('image/png');
                 setSigImage(dataUrl);
                 setIsSigned(true);

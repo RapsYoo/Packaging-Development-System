@@ -145,6 +145,7 @@ class SubstitutionApprovalController extends Controller
             'projects' => $projects,
             'users' => $users,
             'masterSpecs' => $masterSpecs,
+            'nextDocumentNo' => $substitutionApproval->document_no,
         ]);
     }
 
@@ -211,10 +212,11 @@ class SubstitutionApprovalController extends Controller
         AuditService::log('update', 'SubstitutionApproval', $substitutionApproval->id, null, null, 
             "Mengirim Form Substitusi {$substitutionApproval->document_no} untuk sirkulasi approval");
 
-        NotificationService::sendToRoles(
-            ['qc', 'scm'], 
+        // Notify the first signer in the sequential flow: Packaging Dev Staff (role: rd)
+        NotificationService::sendToRole(
+            'rd', 
             'Form Substitusi Dikirim', 
-            "Form Substitusi {$substitutionApproval->document_no} memerlukan peninjauan dan sirkulasi tanda tangan.",
+            "Form Substitusi {$substitutionApproval->document_no} memerlukan tanda tangan Anda sebagai pembuat (Dibuat Oleh).",
             'info', 
             route('substitusi-approvals.show', $substitutionApproval)
         );
@@ -237,6 +239,25 @@ class SubstitutionApprovalController extends Controller
         $name = $request->name;
         $decision = $request->decision;
         $notes = $request->notes;
+
+        // ── Sequential Validation (Backend Guard) ──
+        // Step 2 Laporan signatures
+        if ($roleType === 'qc_manager_laporan' && !$substitutionApproval->ttd_packaging_dev_laporan) {
+            return back()->with('error', 'Tanda tangan Packaging Dev (Pembuat Laporan) harus terisi terlebih dahulu.');
+        }
+        // Step 3 signatures — must be sequential
+        if ($roleType === 'qc_supervisor' && !$substitutionApproval->ttd_packaging_dev) {
+            return back()->with('error', 'Tanda tangan Packaging Dev (Dibuat Oleh) harus terisi terlebih dahulu.');
+        }
+        if ($roleType === 'qc_manager' && !$substitutionApproval->ttd_qc_supervisor) {
+            return back()->with('error', 'Tanda tangan QC Supervisor (Diperiksa Oleh) harus terisi terlebih dahulu.');
+        }
+        if ($roleType === 'scm_manager' && !$substitutionApproval->ttd_qc_manager) {
+            return back()->with('error', 'Tanda tangan QC Manager harus terisi terlebih dahulu.');
+        }
+        if ($roleType === 'qa_manager' && !$substitutionApproval->ttd_scm_manager) {
+            return back()->with('error', 'Tanda tangan SCM Manager harus terisi terlebih dahulu.');
+        }
 
         $sigData = [
             'signature' => $signature,
@@ -263,7 +284,8 @@ class SubstitutionApprovalController extends Controller
             $updates['ttd_qa_manager'] = $sigData;
         }
 
-        if ($decision) {
+        // Only QC Manager, SCM Manager, QA Manager can set the approval decision
+        if ($decision && in_array($roleType, ['qc_manager', 'scm_manager', 'qa_manager'])) {
             $updates['status_approval'] = $decision;
             if ($notes) {
                 $updates['catatan_approval'] = $notes;
@@ -288,9 +310,45 @@ class SubstitutionApprovalController extends Controller
             
             AuditService::log('update', 'SubstitutionApproval', $substitutionApproval->id, null, null, 
                 "Sirkulasi approval selesai untuk Form {$substitutionApproval->document_no} dengan hasil: {$finalStatus}");
+
+            // Notify creator that the circulation is complete
+            NotificationService::sendToUser(
+                $substitutionApproval->created_by,
+                $finalStatus === 'approved' ? 'Form Substitusi Disetujui' : 'Form Substitusi Ditolak',
+                "Sirkulasi approval Form {$substitutionApproval->document_no} telah selesai dengan status: " . ($finalStatus === 'approved' ? 'DISETUJUI' : 'DITOLAK') . '.',
+                $finalStatus === 'approved' ? 'success' : 'error',
+                route('substitusi-approvals.show', $substitutionApproval)
+            );
         } else {
             if ($substitutionApproval->status === 'submitted') {
                 $substitutionApproval->update(['status' => 'in_review']);
+            }
+
+            // Notify the next signer in the sequential flow
+            $nextRole = null;
+            $nextLabel = '';
+            if ($roleType === 'packaging_dev' && !$substitutionApproval->ttd_qc_supervisor) {
+                $nextRole = 'qc';
+                $nextLabel = 'QC Supervisor (Diperiksa Oleh)';
+            } elseif ($roleType === 'qc_supervisor' && !$substitutionApproval->ttd_qc_manager) {
+                $nextRole = 'qc';
+                $nextLabel = 'QC Manager (Disetujui Oleh)';
+            } elseif ($roleType === 'qc_manager' && !$substitutionApproval->ttd_scm_manager) {
+                $nextRole = 'scm';
+                $nextLabel = 'SCM Manager (Disetujui Oleh)';
+            } elseif ($roleType === 'scm_manager' && !$substitutionApproval->ttd_qa_manager) {
+                $nextRole = 'qa';
+                $nextLabel = 'QA Manager (Disetujui Oleh)';
+            }
+
+            if ($nextRole) {
+                NotificationService::sendToRole(
+                    $nextRole,
+                    'Tanda Tangan Diperlukan',
+                    "Form Substitusi {$substitutionApproval->document_no} memerlukan tanda tangan Anda sebagai {$nextLabel}.",
+                    'approval',
+                    route('substitusi-approvals.show', $substitutionApproval)
+                );
             }
         }
 
@@ -299,6 +357,11 @@ class SubstitutionApprovalController extends Controller
 
     public function destroy(SubstitutionApproval $substitutionApproval)
     {
+        // Only draft forms can be deleted
+        if ($substitutionApproval->status !== 'draft') {
+            return back()->with('error', 'Hanya form berstatus Draft yang dapat dihapus. Form yang sudah dikirim untuk sirkulasi tidak dapat dihapus.');
+        }
+
         AuditService::log('delete', 'SubstitutionApproval', $substitutionApproval->id, $substitutionApproval->toArray(), null,
             "Menghapus Form Substitusi {$substitutionApproval->document_no}");
             

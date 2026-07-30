@@ -1,1 +1,0 @@
-import{j as r}from"./app-CT_qoejc.js";import o from"./Create-DicK_vzR.js";import"./AuthenticatedLayout-DqKbVr7m.js";import"./transition-DUYy1kyD.js";function m(t){return r.jsx(o,{...t,editMode:!0,approvalData:t.approval})}export{m as default};

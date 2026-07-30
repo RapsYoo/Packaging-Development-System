@@ -301,8 +301,10 @@ Route::middleware(['auth', 'verified', 'auto.logout'])->group(function () {
         Route::get('/{substitutionApproval}', [SubstitutionApprovalController::class, 'show'])->name('show');
         Route::get('/{substitutionApproval}/print', [SubstitutionApprovalController::class, 'print'])->name('print');
 
-        // Approve and Sign signatures (QC Supervisor, QC Manager, SCM Manager, QA Manager, Admin)
-        Route::post('/{substitutionApproval}/decide', [SubstitutionApprovalController::class, 'decide'])->name('decide');
+        // Approve and Sign signatures (QC Supervisor, QC Manager, SCM Manager, QA Manager, Admin, Packaging Dev)
+        Route::middleware('role:admin,qc,scm,qa,rd')->group(function () {
+            Route::post('/{substitutionApproval}/decide', [SubstitutionApprovalController::class, 'decide'])->name('decide');
+        });
     });
 
     // ══════════════════════════════════

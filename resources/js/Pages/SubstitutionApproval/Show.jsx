@@ -6,7 +6,7 @@ import { Head, Link, useForm, router } from '@inertiajs/react';
 function CanvasSignaturePad({ onSave, onCancel }) {
     const canvasRef = useRef(null);
     const [isSigned, setIsSigned] = useState(false);
-    let drawing = false;
+    const drawingRef = useRef(false);
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -26,7 +26,7 @@ function CanvasSignaturePad({ onSave, onCancel }) {
         };
 
         const startDrawing = (e) => {
-            drawing = true;
+            drawingRef.current = true;
             const pos = getMousePos(e);
             ctx.beginPath();
             ctx.moveTo(pos.x, pos.y);
@@ -34,7 +34,7 @@ function CanvasSignaturePad({ onSave, onCancel }) {
         };
 
         const draw = (e) => {
-            if (!drawing) return;
+            if (!drawingRef.current) return;
             const pos = getMousePos(e);
             ctx.lineTo(pos.x, pos.y);
             ctx.stroke();
@@ -42,8 +42,8 @@ function CanvasSignaturePad({ onSave, onCancel }) {
         };
 
         const stopDrawing = () => {
-            if (drawing) {
-                drawing = false;
+            if (drawingRef.current) {
+                drawingRef.current = false;
                 setIsSigned(true);
             }
         };
@@ -156,19 +156,19 @@ export default function Show({ auth, approval }) {
 
     const role = auth.user.role?.slug || '';
 
-    // Check who can sign which box
+    // Check who can sign which box — Step 2 Laporan
     const canSignPackagingDevLaporan = approval.status === 'draft' && ['admin', 'rd'].includes(role) && !approval.ttd_packaging_dev_laporan;
-    const canSignQcManagerLaporan = approval.status === 'draft' && ['admin', 'qc'].includes(role) && !approval.ttd_qc_manager_laporan;
+    const canSignQcManagerLaporan = approval.status === 'draft' && ['admin', 'qc'].includes(role) && !approval.ttd_qc_manager_laporan && !!approval.ttd_packaging_dev_laporan;
 
-    // Step 3
+    // Step 3 — Sequential workflow: each signer must wait for the previous one
     const isSubmittedOrReview = ['submitted', 'in_review'].includes(approval.status);
     const canSignPackagingDev = isSubmittedOrReview && ['admin', 'rd'].includes(role) && !approval.ttd_packaging_dev;
-    const canSignQcSupervisor = isSubmittedOrReview && ['admin', 'qc'].includes(role) && !approval.ttd_qc_supervisor;
+    const canSignQcSupervisor = isSubmittedOrReview && ['admin', 'qc'].includes(role) && !approval.ttd_qc_supervisor && !!approval.ttd_packaging_dev;
 
-    // Disetujui Oleh (Approvers)
-    const canSignQcManager = isSubmittedOrReview && ['admin', 'qc'].includes(role) && !approval.ttd_qc_manager;
-    const canSignScmManager = isSubmittedOrReview && ['admin', 'scm'].includes(role) && !approval.ttd_scm_manager;
-    const canSignQaManager = isSubmittedOrReview && ['admin', 'qa'].includes(role) && !approval.ttd_qa_manager;
+    // Disetujui Oleh (Approvers) — Sequential: QC Mgr → SCM Mgr → QA Mgr
+    const canSignQcManager = isSubmittedOrReview && ['admin', 'qc'].includes(role) && !approval.ttd_qc_manager && !!approval.ttd_qc_supervisor;
+    const canSignScmManager = isSubmittedOrReview && ['admin', 'scm'].includes(role) && !approval.ttd_scm_manager && !!approval.ttd_qc_manager;
+    const canSignQaManager = isSubmittedOrReview && ['admin', 'qa'].includes(role) && !approval.ttd_qa_manager && !!approval.ttd_scm_manager;
 
     const renderSigBlock = (sigObj, altLabel) => {
         if (!sigObj) return null;
@@ -268,15 +268,15 @@ export default function Show({ auth, approval }) {
                                 </tr>
                                 <tr className="border-b border-gray-800">
                                     <td className="px-4 py-3 font-bold bg-gray-50 border-r border-gray-800 text-sm">Supplier</td>
-                                    <td className="px-4 py-3 text-sm">{approval.supplier_name}</td>
+                                    <td className="px-4 py-3 text-sm">{approval.supplier}</td>
                                 </tr>
                                 <tr className="border-b border-gray-800">
-                                    <td className="px-4 py-3 font-bold bg-gray-50 border-r border-gray-800 text-sm">Spesifikasi Kemasan</td>
-                                    <td className="px-4 py-3 text-sm">{approval.spec_details || '-'}</td>
+                                    <td className="px-4 py-3 font-bold bg-gray-50 border-r border-gray-800 text-sm">Tanggal Pengajuan</td>
+                                    <td className="px-4 py-3 text-sm">{approval.document_date ? new Date(approval.document_date).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }) : '-'}</td>
                                 </tr>
                                 <tr>
                                     <td className="px-4 py-3 font-bold bg-gray-50 border-r border-gray-800 text-sm">Alasan Substitusi</td>
-                                    <td className="px-4 py-3 text-sm text-gray-700 whitespace-pre-line">{approval.reason || '-'}</td>
+                                    <td className="px-4 py-3 text-sm text-gray-700 whitespace-pre-line">{approval.alasan_pengajuan}{approval.alasan_pengajuan === 'Lainnya' && approval.alasan_lainnya ? ` — ${approval.alasan_lainnya}` : ''}</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -421,6 +421,57 @@ export default function Show({ auth, approval }) {
                     </div>
                 </div>
 
+                {/* SCM & Commercial Info */}
+                <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                    <h3 className="font-bold text-gray-800 text-sm pb-2 border-b border-gray-100 mb-4">Informasi SCM & Komersial</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div className="flex justify-between bg-gray-50 px-4 py-3 rounded-lg">
+                            <span className="text-gray-500">Harga Penawaran</span>
+                            <span className="font-bold text-gray-900">{approval.harga_penawaran ? `Rp ${Number(approval.harga_penawaran).toLocaleString('id-ID')}` : '-'}</span>
+                        </div>
+                        <div className="flex justify-between bg-gray-50 px-4 py-3 rounded-lg">
+                            <span className="text-gray-500">Harga Existing</span>
+                            <span className="font-bold text-gray-900">{approval.harga_existing ? `Rp ${Number(approval.harga_existing).toLocaleString('id-ID')}` : '-'}</span>
+                        </div>
+                        <div className="flex justify-between bg-gray-50 px-4 py-3 rounded-lg">
+                            <span className="text-gray-500">Estimasi Lead Time</span>
+                            <span className="font-bold text-gray-900">{approval.estimasi_lead_time ? `${approval.estimasi_lead_time} hari` : '-'}</span>
+                        </div>
+                        <div className="flex justify-between bg-gray-50 px-4 py-3 rounded-lg">
+                            <span className="text-gray-500">Selisih Harga</span>
+                            {approval.harga_penawaran && approval.harga_existing ? (
+                                <span className={`font-bold ${Number(approval.harga_penawaran) <= Number(approval.harga_existing) ? 'text-green-700' : 'text-red-700'}`}>
+                                    Rp {Math.abs(Number(approval.harga_penawaran) - Number(approval.harga_existing)).toLocaleString('id-ID')}
+                                    {Number(approval.harga_penawaran) <= Number(approval.harga_existing) ? ' (lebih murah)' : ' (lebih mahal)'}
+                                </span>
+                            ) : (
+                                <span className="text-gray-400">-</span>
+                            )}
+                        </div>
+                        {approval.notes && (
+                            <div className="md:col-span-2 bg-gray-50 px-4 py-3 rounded-lg">
+                                <span className="text-gray-500 block mb-1">Catatan Tambahan</span>
+                                <span className="text-gray-800 whitespace-pre-line">{approval.notes}</span>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Attachment files */}
+                    {approval.attachment_files && approval.attachment_files.length > 0 && (
+                        <div className="mt-4 pt-4 border-t border-gray-100">
+                            <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Lampiran File</h4>
+                            <div className="flex flex-wrap gap-2">
+                                {approval.attachment_files.map((file, idx) => (
+                                    <a key={idx} href={file.url || file} target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-lg text-xs font-semibold hover:bg-indigo-100 transition-colors border border-indigo-100">
+                                        <svg className="w-3.5 h-3.5 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
+                                        {file.name || `File ${idx + 1}`}
+                                    </a>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+
                 {/* Additional Trial and SCM Info Details (Collapse/Display) */}
                 <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 space-y-6">
                     <h3 className="font-bold text-gray-800 text-sm pb-2 border-b border-gray-100">Detail Laporan Analisa Trial (Step 2)</h3>
@@ -498,6 +549,51 @@ export default function Show({ auth, approval }) {
                     <div className="flex gap-10 text-sm bg-gray-50 p-4 border border-gray-100 rounded-xl">
                         <div><span className="text-gray-500">Rekomendasi:</span> <span className={`font-bold ${approval.rekomendasi === 'MS' ? 'text-green-700' : 'text-red-700'}`}>{approval.rekomendasi === 'MS' ? 'Memenuhi Syarat (MS)' : 'Tidak Memenuhi Syarat (TMS)'}</span></div>
                         {approval.catatan_rekomendasi && <div><span className="text-gray-500">Catatan Rekomendasi:</span> <span className="font-semibold text-gray-800">{approval.catatan_rekomendasi}</span></div>}
+                    </div>
+
+                    {/* Step 2 Report Signatures — Dibuat Oleh & Diperiksa Oleh */}
+                    <div className="border-t border-gray-100 pt-6">
+                        <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">Penandatangan Laporan Trial</h4>
+                        <div className="grid grid-cols-2 gap-6">
+                            {/* Dibuat Oleh — Packaging Dev Staff */}
+                            <div className="border border-gray-200 rounded-xl p-4 flex flex-col items-center justify-between text-center min-h-[140px] bg-gray-50/30">
+                                <span className="text-xs font-bold text-gray-600">Dibuat Oleh,</span>
+                                <div className="my-2 h-14 flex items-center justify-center">
+                                    {approval.ttd_packaging_dev_laporan ? (
+                                        renderSigBlock(approval.ttd_packaging_dev_laporan, 'Ttd Packaging Dev Laporan')
+                                    ) : (
+                                        canSignPackagingDevLaporan ? (
+                                            <button onClick={() => openSignModal('packaging_dev_laporan')} className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold shadow transition-colors">
+                                                ✍ Tanda Tangan Laporan
+                                            </button>
+                                        ) : (
+                                            <span className="text-xs text-gray-400 italic">Belum ditandatangani</span>
+                                        )
+                                    )}
+                                </div>
+                                <div className="w-3/4 border-b border-gray-600 my-1"></div>
+                                <span className="text-xs font-semibold text-gray-800">{approval.ttd_packaging_dev_laporan?.name || 'Packaging Development Staff'}</span>
+                            </div>
+                            {/* Diperiksa Oleh — QC Manager */}
+                            <div className="border border-gray-200 rounded-xl p-4 flex flex-col items-center justify-between text-center min-h-[140px] bg-gray-50/30">
+                                <span className="text-xs font-bold text-gray-600">Diperiksa Oleh,</span>
+                                <div className="my-2 h-14 flex items-center justify-center">
+                                    {approval.ttd_qc_manager_laporan ? (
+                                        renderSigBlock(approval.ttd_qc_manager_laporan, 'Ttd QC Manager Laporan')
+                                    ) : (
+                                        canSignQcManagerLaporan ? (
+                                            <button onClick={() => openSignModal('qc_manager_laporan')} className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold shadow transition-colors">
+                                                ✍ Tanda Tangan Laporan
+                                            </button>
+                                        ) : (
+                                            <span className="text-xs text-gray-400 italic">{!approval.ttd_packaging_dev_laporan ? 'Menunggu Pembuat' : 'Belum ditandatangani'}</span>
+                                        )
+                                    )}
+                                </div>
+                                <div className="w-3/4 border-b border-gray-600 my-1"></div>
+                                <span className="text-xs font-semibold text-gray-800">{approval.ttd_qc_manager_laporan?.name || 'QC Manager'}</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

@@ -75,7 +75,8 @@ export default function Index({ auth, approvals, filters }) {
                             >
                                 <option value="">Semua Status</option>
                                 <option value="draft">Draft</option>
-                                <option value="submitted">Pending</option>
+                                <option value="submitted">Pending (Menunggu)</option>
+                                <option value="in_review">In Review (Proses TTD)</option>
                                 <option value="approved">Closed</option>
                                 <option value="rejected">Cancel</option>
                             </select>
